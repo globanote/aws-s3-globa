@@ -6,13 +6,20 @@ on:
     
 jobs:
   build-arm64:
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-22.04-arm64
     defaults:
       run:
         working-directory: services/lambda-presign
 
     steps:
       - uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials           # ← 다시 추가
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:           ap-northeast-2
 
       - name: Install musl and add Rust target
         run: |
