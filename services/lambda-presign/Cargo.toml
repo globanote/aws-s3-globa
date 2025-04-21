@@ -1,0 +1,12 @@
+[package]
+name = "lambda-presign"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+aws-config = "1.6.1"
+aws-sdk-s3 = "1.82.0"
+aws_lambda_events = "0.16.0"
+lambda_runtime = "0.13.0"
+serde = { version = "1.0.219", features = ["derive"] }
+tokio = { version = "1.44.2", features = ["full"] }
