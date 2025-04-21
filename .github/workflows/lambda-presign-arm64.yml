@@ -3,43 +3,37 @@ name: Deploy Rust Lambda Presign ARM64
 on:
   push:
     branches: [ main ]
-
+    
 jobs:
-  deploy:
-    runs-on: ubuntu-24.04-arm
+  build-arm64:
+    runs-on: ubuntu-24.04-arm64
     defaults:
       run:
         working-directory: services/lambda-presign
 
     steps:
-      # 1. 레포지토리 체크아웃
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      # 2. AWS 자격증명 구성
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:           ap-northeast-2
+      - name: Install musl and add Rust target
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+          rustup target add aarch64-unknown-linux-musl
 
-      # 3. Rust ARM64 릴리즈 빌드 (네이티브 ARM 환경)
-      - name: Build for ARM64
-        run: cargo build --release
+      - name: Build static ARM64 binary
+        run: |
+          cargo build --release --target aarch64-unknown-linux-musl
 
-      # 4. Lambda 배포 아티팩트 패키징
       - name: Package Lambda artifact
         run: |
           mkdir -p deploy
-          cp target/release/presign deploy/bootstrap
+          cp target/aarch64-unknown-linux-musl/release/presign deploy/bootstrap
           chmod +x deploy/bootstrap
           cd deploy
-          zip -r lambda-presign-arm64.zip bootstrap
+          zip -r presign-arm64.zip bootstrap
 
-      # 5. Lambda 함수 코드 업데이트
       - name: Update Lambda function code
         run: |
           aws lambda update-function-code \
             --function-name lambda-presign-arm64 \
-            --zip-file fileb://deploy/lambda-presign-arm64.zip
+            --zip-file fileb://deploy/presign-arm64.zip
