@@ -16,15 +16,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 2. ARM64 크로스 컴파일 환경 준비
-      - name: Install ARM64 toolchain & glibc
-        run: |
-          rustup target add aarch64-unknown-linux-gnu
-          sudo dpkg --add-architecture arm64
-          sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu libc6-dev:arm64
-
-      # 3. AWS 자격증명 구성
+      # 2. AWS 자격증명 구성
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -32,27 +24,20 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region:           ap-northeast-2
 
-      # 4. Rust ARM64 릴리즈 빌드
+      # 3. Rust ARM64 릴리즈 빌드 (네이티브 ARM 환경)
       - name: Build for ARM64
-        run: cargo build --release --target aarch64-unknown-linux-gnu
+        run: cargo build --release
 
-      # 5. Lambda 배포 아티팩트 패키징
+      # 4. Lambda 배포 아티팩트 패키징
       - name: Package Lambda artifact
         run: |
           mkdir -p deploy
-          cp target/aarch64-unknown-linux-gnu/release/presign deploy/bootstrap
+          cp target/release/presign deploy/bootstrap
           chmod +x deploy/bootstrap
           cd deploy
           zip -r lambda-presign-arm64.zip bootstrap
 
-      # 6. Lambda 아키텍처 보장 (ARM64)
-      - name: Ensure Lambda is set to ARM64
-        run: |
-          aws lambda update-function-configuration \
-            --function-name lambda-presign-arm64 \
-            --architectures arm64
-
-      # 7. Lambda 함수 코드 업데이트
+      # 5. Lambda 함수 코드 업데이트
       - name: Update Lambda function code
         run: |
           aws lambda update-function-code \
