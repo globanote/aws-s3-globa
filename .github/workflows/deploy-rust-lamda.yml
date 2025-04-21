@@ -1,4 +1,4 @@
-name: deploy-rust-lambda
+name: Deploy_Rust_Lambda
 
 on:
   push:
@@ -7,6 +7,10 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/lambda-presign
+
     steps:
       - uses: actions/checkout@v3
 
@@ -18,15 +22,14 @@ jobs:
 
       - name: Build
         run: |
-          rustup target add x86_64-unknown-linux-gnu
           cargo build --release --target x86_64-unknown-linux-gnu
 
       - name: Package for Lambda
         run: |
-          mkdir -p lambda_build
-          cp target/x86_64-unknown-linux-gnu/release/presign lambda_build/bootstrap
-          chmod +x lambda_build/bootstrap
-          cd lambda_build && zip -r lambda.zip bootstrap
+          mkdir -p deploy
+          cp target/x86_64-unknown-linux-gnu/release/presign deploy/bootstrap
+          chmod +x deploy/bootstrap
+          zip -r lambda.zip deploy/bootstrap
 
       - name: Deploy to Lambda
         uses: aws-actions/aws-cli@v2
@@ -36,5 +39,5 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           args: |
             lambda update-function-code \
-              --function-name s3-presign \
-              --zip-file fileb://lambda_build/lambda.zip
+              --function-name lambda-presign \
+              --zip-file fileb://services/lambda-presign/deploy/lambda.zip

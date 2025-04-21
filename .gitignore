@@ -2,5 +2,5 @@
 ./services/lambda-presign/.nev
 
 #Rust 
-./services/lambda-presign/target
+./services/lambda-presign/target/*
 ./services/lambda-presign/Cargo.lock
