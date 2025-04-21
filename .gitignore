@@ -1,6 +1,6 @@
 # 환경변수
 .services/lambda-presign/.env
-
+globanote/backend/*.env
 # Rust 빌드 아티팩트
 /services/lambda-presign/target/
 /services/lambda-presign/deploy/
@@ -8,7 +8,7 @@
 # IDE / 에디터
 *.idea/
 *.vscode/
-
+*/.venv
 # OS 파일
 .DS_Store
 
@@ -22,3 +22,4 @@ deploy/
 #    라이브러리용 프레임워크라면 무시해도 무방합니다.
 # /services/lambda-presign/Cargo.lock
 services/lambda-presign/.env
+globanote/backend/aws/*
