@@ -1,6 +1,6 @@
-use lambda_http::{run, service_fn, Body, Error, Request, Response};
+use lambda_runtime::{run, service_fn, Error, LambdaEvent};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
+use serde_json::{json, Value};
 use aws_sdk_s3::{Client as S3Client, presigning::PresigningConfig};
 use tracing::{info, error};
 use tracing_subscriber::{fmt, EnvFilter};
@@ -20,36 +20,44 @@ struct PresignResponse {
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    // 로그 초기화
     fmt().with_env_filter(EnvFilter::new("info")).init();
     info!("Starting presign lambda");
     run(service_fn(handler)).await
 }
 
-async fn handler(req: Request) -> Result<Response<Body>, Error> {
-    info!("▶▶ raw event: {:?}", req);
-
-    // API Gateway에서 오는 요청 본문 추출
-    let body = match req.body() {
-        Body::Text(text) => text.as_bytes(),
-        Body::Binary(bin) => bin,
-        Body::Empty => {
-            error!("Empty body");
-            return Ok(Response::builder().status(400).body("missing body".into())?);
+async fn handler(event: LambdaEvent<Value>) -> Result<Value, Error> {
+    let (event, _context) = event.into_parts();
+    info!("받은 이벤트: {}", json!(event));
+    
+    // API Gateway 이벤트에서 본문 추출
+    let body = if let Some(body) = event.get("body") {
+        if let Some(body_str) = body.as_str() {
+            body_str
+        } else {
+            return Ok(json!({
+                "statusCode": 400,
+                "body": "요청 본문이 문자열이 아닙니다"
+            }));
         }
+    } else {
+        return Ok(json!({
+            "statusCode": 400,
+            "body": "요청 본문이 없습니다"
+        }));
     };
-
-    // JSON 파싱 - match로 오류 처리
-    let pres: PresignRequest = match serde_json::from_slice(body) {
-        Ok(parsed) => parsed,
+    
+    // JSON 파싱
+    let pres: PresignRequest = match serde_json::from_str(body) {
+        Ok(req) => req,
         Err(e) => {
-            error!("JSON parse error: {:?}", e);
-            return Ok(Response::builder()
-                .status(400)
-                .body(format!("잘못된 JSON 형식: {}", e).into())?);
+            error!("JSON 파싱 오류: {:?}", e);
+            return Ok(json!({
+                "statusCode": 400,
+                "body": format!("잘못된 JSON 형식: {}", e)
+            }));
         }
     };
-
+    
     // S3 presign
     let conf = aws_config::load_from_env().await;
     let client = S3Client::new(&conf);
@@ -59,13 +67,13 @@ async fn handler(req: Request) -> Result<Response<Body>, Error> {
             Ok(cfg) => cfg,
             Err(e) => {
                 error!("PresigningConfig 생성 오류: {:?}", e);
-                return Ok(Response::builder()
-                    .status(500)
-                    .body("서버 내부 오류".into())?);
+                return Ok(json!({
+                    "statusCode": 500,
+                    "body": "서버 내부 오류"
+                }));
             }
         };
-
-    // 명시적인 match로 오류 처리
+    
     let presigned = match client
         .put_object()
         .bucket(&pres.bucket)
@@ -75,16 +83,21 @@ async fn handler(req: Request) -> Result<Response<Body>, Error> {
         .await {
             Ok(url) => url,
             Err(e) => {
-                error!("Presign failed: {:?}", e);
-                return Ok(Response::builder()
-                    .status(500)
-                    .body(format!("Presign URL 생성 실패: {}", e).into())?);
+                error!("Presign 실패: {:?}", e);
+                return Ok(json!({
+                    "statusCode": 500,
+                    "body": format!("Presign URL 생성 실패: {}", e)
+                }));
             }
         };
-
-    let body = json!(PresignResponse { url: presigned.uri().to_string() }).to_string();
-    Ok(Response::builder()
-        .status(200)
-        .header("content-type", "application/json")
-        .body(body.into())?)
+    
+    let response = json!(PresignResponse { url: presigned.uri().to_string() });
+    
+    Ok(json!({
+        "statusCode": 200,
+        "headers": {
+            "content-type": "application/json"
+        },
+        "body": response.to_string()
+    }))
 }

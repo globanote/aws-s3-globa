@@ -23,3 +23,4 @@ deploy/
 # /services/lambda-presign/Cargo.lock
 services/lambda-presign/.env
 globanote/backend/aws/*
+services/lambda-presign/tests/response.json
