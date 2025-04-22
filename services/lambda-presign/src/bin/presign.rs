@@ -1,10 +1,14 @@
 use lambda_runtime::{service_fn, Error, LambdaEvent};
-use aws_lambda_events::apigw::{ApiGatewayProxyRequest, ApiGatewayProxyResponse};
-use aws_lambda_events::encodings::Body;
-use aws_sdk_s3::Client as S3Client;
-use aws_sdk_s3::presigning::PresigningConfig;
+use aws_lambda_events::event::apigw::{
+    ApiGatewayV2httpRequest as Request,
+    ApiGatewayV2httpResponse as Response,
+};
 use serde::{Deserialize, Serialize};
-use serde_json;
+use serde_json::json;
+use aws_sdk_s3::{Client as S3Client, presigning::PresigningConfig};
+use tracing::{info, error};
+use tracing_subscriber::{fmt, EnvFilter};
+use std::collections::HashMap;
 
 #[derive(Deserialize)]
 struct PresignRequest {
@@ -18,50 +22,62 @@ struct PresignResponse {
     url: String,
 }
 
-async fn handler(
-    event: LambdaEvent<ApiGatewayProxyRequest>,
-) -> Result<ApiGatewayProxyResponse, Error> {
-    println!("▶▶ handler start, body = {:?}", event.payload.body);
-    // Parse request body
-    let body_str = event.payload.body.as_deref().unwrap_or("{}");
-    let req: PresignRequest = serde_json::from_str(body_str)?;
+#[tokio::main]
+async fn main() -> Result<(), Error> {
+    fmt()
+        .with_env_filter(EnvFilter::new("info"))
+        .init();
+    info!("Lambda starting");
+    lambda_runtime::run(service_fn(handler)).await?;
+    Ok(())
+}
 
-    // Load AWS config and create S3 client
-    let config = aws_config::load_from_env().await;
-    let client = S3Client::new(&config);
+async fn handler(event: LambdaEvent<Request>) -> Result<Response, Error> {
+    let (req, _ctx) = event.into_parts();
+    info!("▶▶ raw event: {:?}", req);
 
-    // Build presign config
+    // HTTP API(v2)의 body: Option<String>
+    let body_str = req.body
+        .as_deref()
+        .ok_or_else(|| {
+            error!("Missing body");
+            "Missing body"
+        })?;
+    info!("Parsed body: {}", body_str);
+
+    // JSON 파싱
+    let pres: PresignRequest = serde_json::from_str(body_str).map_err(|e| {
+        error!("JSON parse error: {:?}", e);
+        e
+    })?;
+
+    // S3 presign
+    let conf = aws_config::load_from_env().await;
+    let client = S3Client::new(&conf);
     let presign_cfg = PresigningConfig::builder()
         .expires_in(std::time::Duration::from_secs(900))
         .build()?;
-
-    // Generate presigned URL for PUT
     let presigned = client
         .put_object()
-        .bucket(req.bucket)
-        .key(req.key)
-        .content_type(req.content_type)
+        .bucket(&pres.bucket)
+        .key(&pres.key)
+        .content_type(&pres.content_type)
         .presigned(presign_cfg)
-        .await?;
+        .await
+        .map_err(|e| {
+            error!("Presign failed: {:?}", e);
+            e
+        })?;
 
-    // Serialize response
-    let response = PresignResponse { url: presigned.uri().to_string() };
-    let response_json = serde_json::to_string(&response)?;
+    let body = json!(PresignResponse { url: presigned.uri().to_string() }).to_string();
+    let mut headers = HashMap::new();
+    headers.insert("Content-Type".to_string(), "application/json".to_string());
 
-    // Return API Gateway proxy response
-    let api_response = ApiGatewayProxyResponse {
+    Ok(Response {
         status_code: 200,
-        headers: Default::default(),
+        headers,
         multi_value_headers: Default::default(),
-        body: Some(Body::Text(response_json)),
-        is_base64_encoded: false,
-    };
-
-    Ok(api_response)
-}
-
-#[tokio::main]
-async fn main() -> Result<(), Error> {
-    lambda_runtime::run(service_fn(handler)).await?;
-    Ok(())
+        body: Some(body),
+        is_base64_encoded: Some(false),
+    })
 }
