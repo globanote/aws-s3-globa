@@ -1,0 +1,14 @@
+{
+  "resource": null,
+  "path": null,
+  "httpMethod": "POST",
+  "headers": {},
+  "multiValueHeaders": {},
+  "queryStringParameters": null,
+  "multiValueQueryStringParameters": null,
+  "pathParameters": null,
+  "stageVariables": null,
+  "requestContext": {},
+  "body": "{\"bucket\":\"raw-voice-test-bucket\",\"key\":\"tests/2022년 국가연구개발 성과평가 포럼 - 한국과학기술기획평가원 (KISTEP).mp3\",\"content_type\":\"audio/mpeg\"}",
+  "isBase64Encoded": false
+}

@@ -7,6 +7,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_presign_config_duration() {
+        // Test
         let cfg = PresigningConfig::builder().expires_in(Duration::from_secs(60)).build().unwrap();
         assert_eq!(cfg.expires_in(), Duration::from_secs(60));
     }

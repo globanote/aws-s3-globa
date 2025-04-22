@@ -1,0 +1,1 @@
+{"errorType":"&lambda_runtime::deserializer::DeserializeError","errorMessage":"failed to deserialize the incoming data into the function's payload type: [requestContext] requestContext: missing field `httpMethod` at line 11 column 22\n"}
