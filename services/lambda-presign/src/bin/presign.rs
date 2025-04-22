@@ -29,36 +29,58 @@ async fn main() -> Result<(), Error> {
 async fn handler(req: Request) -> Result<Response<Body>, Error> {
     info!("▶▶ raw event: {:?}", req);
 
-    // 바디가 비어 있으면 400 리턴
-    let raw = req.body();
-    if raw.is_empty() {
-        error!("Empty body");
-        return Ok(Response::builder().status(400).body("missing body".into())?);
-    }
+    // API Gateway에서 오는 요청 본문 추출
+    let body = match req.body() {
+        Body::Text(text) => text.as_bytes(),
+        Body::Binary(bin) => bin,
+        Body::Empty => {
+            error!("Empty body");
+            return Ok(Response::builder().status(400).body("missing body".into())?);
+        }
+    };
 
-    // JSON 파싱
-    let pres: PresignRequest = serde_json::from_slice(raw).map_err(|e| {
-        error!("JSON parse error: {:?}", e);
-        e.into()
-    })?;
+    // JSON 파싱 - match로 오류 처리
+    let pres: PresignRequest = match serde_json::from_slice(body) {
+        Ok(parsed) => parsed,
+        Err(e) => {
+            error!("JSON parse error: {:?}", e);
+            return Ok(Response::builder()
+                .status(400)
+                .body(format!("잘못된 JSON 형식: {}", e).into())?);
+        }
+    };
 
     // S3 presign
     let conf = aws_config::load_from_env().await;
     let client = S3Client::new(&conf);
-    let presign_cfg = PresigningConfig::builder()
+    let presign_cfg = match PresigningConfig::builder()
         .expires_in(Duration::from_secs(900))
-        .build()?;
-    let presigned = client
+        .build() {
+            Ok(cfg) => cfg,
+            Err(e) => {
+                error!("PresigningConfig 생성 오류: {:?}", e);
+                return Ok(Response::builder()
+                    .status(500)
+                    .body("서버 내부 오류".into())?);
+            }
+        };
+
+    // 명시적인 match로 오류 처리
+    let presigned = match client
         .put_object()
         .bucket(&pres.bucket)
         .key(&pres.key)
         .content_type(&pres.content_type)
         .presigned(presign_cfg)
-        .await
-        .map_err(|e| {
-            error!("Presign failed: {:?}", e);
-            e.into()
-        })?;
+        .await {
+            Ok(url) => url,
+            Err(e) => {
+                error!("Presign failed: {:?}", e);
+                return Ok(Response::builder()
+                    .status(500)
+                    .body(format!("Presign URL 생성 실패: {}", e).into())?);
+            }
+        };
 
     let body = json!(PresignResponse { url: presigned.uri().to_string() }).to_string();
     Ok(Response::builder()
