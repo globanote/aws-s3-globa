@@ -21,6 +21,7 @@ struct PresignResponse {
 async fn handler(
     event: LambdaEvent<ApiGatewayProxyRequest>,
 ) -> Result<ApiGatewayProxyResponse, Error> {
+    println!("▶▶ handler start, body = {:?}", event.payload.body);
     // Parse request body
     let body_str = event.payload.body.as_deref().unwrap_or("{}");
     let req: PresignRequest = serde_json::from_str(body_str)?;
