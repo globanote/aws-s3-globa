@@ -1,29 +1,158 @@
-# backend.py
 import os
 import uuid
 import json
-import asyncio
 import boto3
-import wave
 import tempfile
 import shutil
 import requests
 from datetime import datetime
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, Form
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from amazon_transcribe.handlers import TranscriptResultStreamHandler
-from amazon_transcribe.client import TranscribeStreamingClient
-from amazon_transcribe.model import TranscriptEvent
 from botocore.exceptions import ClientError
-from typing import Dict, List
 import logging
 from dotenv import load_dotenv
+
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 load_dotenv()
-app = FastAPI()
+
+# AWS 설정 - 환경 변수에서 가져오기
+AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY")
+AWS_SECRET_KEY = os.getenv("AWS_SECRET_KEY")
+AWS_REGION = os.getenv("AWS_REGION")
+S3_BUCKET = os.getenv("S3_BUCKET")
+DYNAMODB_TABLE = os.getenv("DYNAMODB_TABLE")
+
+# 로컬 저장 디렉토리 설정
+LOCAL_STORAGE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test")
+os.makedirs(LOCAL_STORAGE_DIR, exist_ok=True)
+logger.info(f"Local storage directory: {LOCAL_STORAGE_DIR}")
+
+# S3 클라이언트 초기화
+s3_client = None
+if AWS_ACCESS_KEY and AWS_SECRET_KEY and S3_BUCKET:
+    s3_client = boto3.client(
+        's3',
+        aws_access_key_id=AWS_ACCESS_KEY,
+        aws_secret_access_key=AWS_SECRET_KEY,
+        region_name=AWS_REGION
+    )
+
+# DynamoDB 클라이언트 초기화
+dynamodb = None
+if AWS_ACCESS_KEY and AWS_SECRET_KEY:
+    dynamodb = boto3.resource(
+        'dynamodb',
+        aws_access_key_id=AWS_ACCESS_KEY,
+        aws_secret_access_key=AWS_SECRET_KEY,
+        region_name=AWS_REGION
+    )
+
+# DynamoDB 테이블 생성 함수
+def create_dynamodb_table():
+    try:
+        if not dynamodb:
+            logger.warning("DynamoDB client not initialized. Cannot create table.")
+            return None
+        
+        # 테이블이 이미 존재하는지 확인
+        existing_tables = dynamodb.meta.client.list_tables()['TableNames']
+        if DYNAMODB_TABLE in existing_tables:
+            logger.info(f"DynamoDB table {DYNAMODB_TABLE} already exists.")
+            return dynamodb.Table(DYNAMODB_TABLE)
+        
+        # 테이블 생성
+        table = dynamodb.create_table(
+            TableName=DYNAMODB_TABLE,
+            KeySchema=[
+                {
+                    'AttributeName': 'id',
+                    'KeyType': 'HASH'  # 파티션 키
+                }
+            ],
+            AttributeDefinitions=[
+                {
+                    'AttributeName': 'id',
+                    'AttributeType': 'S'
+                }
+            ],
+            ProvisionedThroughput={
+                'ReadCapacityUnits': 5,
+                'WriteCapacityUnits': 5
+            }
+        )
+        
+        # 테이블이 생성될 때까지 대기
+        table.meta.client.get_waiter('table_exists').wait(TableName=DYNAMODB_TABLE)
+        logger.info(f"Created DynamoDB table: {DYNAMODB_TABLE}")
+        return table
+    
+    except ClientError as e:
+        logger.error(f"Error creating DynamoDB table: {e.response['Error']['Message']}")
+        return None
+
+# DynamoDB에 트랜스크립션 결과 저장 함수
+def save_transcription_to_dynamodb(job_id, transcript_data, file_name=None):
+    try:
+        if not dynamodb:
+            logger.warning("DynamoDB client not initialized. Cannot save transcript.")
+            return None
+        
+        table = dynamodb.Table(DYNAMODB_TABLE)
+        
+        # 트랜스크립션 결과에서 필요한 정보 추출
+        transcript_text = ""
+        try:
+            if "results" in transcript_data and "transcripts" in transcript_data["results"]:
+                transcript_text = transcript_data["results"]["transcripts"][0]["transcript"]
+            # 다른 가능한 구조 확인
+            elif "transcripts" in transcript_data:
+                transcript_text = transcript_data["transcripts"][0]["transcript"]
+        except (KeyError, IndexError) as e:
+            logger.warning(f"Could not extract transcript text: {str(e)}")
+            transcript_text = "Transcript text extraction failed"
+        
+        # 파일 생성 날짜 추출 (현재 시간 사용)
+        file_creation_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        # 현재 날짜 (저장 시점)
+        current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        # 저장할 아이템 준비
+        item = {
+            'id': job_id,
+            'fileName': file_name if file_name else f"{job_id}.json",
+            'transcript': transcript_text,
+            'fileCreationDate': file_creation_date,
+            'currentDate': current_date
+        }
+        
+        # DynamoDB에 아이템 저장
+        response = table.put_item(Item=item)
+        logger.info(f"Transcription data saved to DynamoDB: {job_id}")
+        return response
+    except Exception as e:
+        logger.error(f"Error saving to DynamoDB: {str(e)}")
+        return None
+
+# Lifespan 이벤트 핸들러 정의
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 시작 시 실행할 코드
+    if dynamodb:
+        create_dynamodb_table()
+    logger.info("Application startup: DynamoDB table check completed")
+    
+    yield  # 애플리케이션 실행 중
+    
+    # 종료 시 실행할 코드
+    logger.info("Application shutdown")
+
+# FastAPI 앱 생성 시 lifespan 매개변수 전달
+app = FastAPI(lifespan=lifespan)
 
 # CORS 설정
 app.add_middleware(
@@ -34,280 +163,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# AWS 설정 - 환경 변수에서 가져오기
-AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY")
-AWS_SECRET_KEY = os.getenv("AWS_SECRET_KEY")
-AWS_REGION = os.getenv("AWS_REGION")
-S3_BUCKET = os.getenv("S3_BUCKET")
-
-# 로컬 저장 디렉토리 설정
-LOCAL_STORAGE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test")
-os.makedirs(LOCAL_STORAGE_DIR, exist_ok=True)
-logger.info(f"Local storage directory: {LOCAL_STORAGE_DIR}")
-
-# S3 클라이언트 초기화 (선택적)
-s3_client = None
-if AWS_ACCESS_KEY and AWS_SECRET_KEY and S3_BUCKET:
-    s3_client = boto3.client(
-        's3',
-        aws_access_key_id=AWS_ACCESS_KEY,
-        aws_secret_access_key=AWS_SECRET_KEY,
-        region_name=AWS_REGION
-    )
-
-# 활성 WebSocket 연결 저장
-active_connections: Dict[str, WebSocket] = {}
-# 오디오 청크 저장
-audio_chunks: Dict[str, List[bytes]] = {}
-# 트랜스크립션 결과 저장
-transcription_results: Dict[str, List[str]] = {}
-
-# 고정된 샘플 레이트 정의
-SAMPLE_RATE = 16000
-
-class MyTranscriptResultStreamHandler(TranscriptResultStreamHandler):
-    def __init__(self, session_id):
-        # 고정된 샘플 레이트 사용
-        super().__init__(SAMPLE_RATE)
-        self.session_id = session_id
-        if session_id not in transcription_results:
-            transcription_results[session_id] = []
-        
-    # handle_events 메서드 오버라이드 - output_stream 파라미터 추가
-    async def handle_events(self, output_stream):
-        async for event in output_stream:
-            if event.transcript:
-                await self.handle_transcript_event(event)
-        
-    async def handle_transcript_event(self, transcript_event: TranscriptEvent):
-        results = transcript_event.transcript.results
-        if len(results) > 0:
-            transcript = results[0]
-            if not transcript.is_partial:
-                # 최종 결과
-                transcript_text = transcript.alternatives[0].transcript
-                speaker_labels = []
-                
-                # 화자 구분 정보가 있는 경우
-                if hasattr(transcript, 'speaker_labels') and transcript.speaker_labels:
-                    for segment in transcript.speaker_labels.segments:
-                        speaker_labels.append({
-                            "speaker_label": segment.speaker_label,
-                            "start_time": segment.start_time,
-                            "end_time": segment.end_time
-                        })
-                        
-                # 트랜스크립션 결과 저장
-                if speaker_labels:
-                    for label in speaker_labels:
-                        speaker = label.get("speaker_label", "")
-                        formatted_text = f"[{speaker}] {transcript_text}"
-                        transcription_results[self.session_id].append(formatted_text)
-                else:
-                    transcription_results[self.session_id].append(transcript_text)
-                
-                # WebSocket을 통해 결과 전송
-                if self.session_id in active_connections:
-                    await active_connections[self.session_id].send_json({
-                        "type": "transcript",
-                        "is_partial": False,
-                        "text": transcript_text,
-                        "speaker_labels": speaker_labels
-                    })
-            else:
-                # 부분 결과
-                transcript_text = transcript.alternatives[0].transcript
-                if self.session_id in active_connections:
-                    await active_connections[self.session_id].send_json({
-                        "type": "transcript",
-                        "is_partial": True,
-                        "text": transcript_text
-                    })
-
-@app.websocket("/ws/{session_id}")
-async def websocket_endpoint(websocket: WebSocket, session_id: str):
-    await websocket.accept()
-    logger.info(f"WebSocket connection accepted for session: {session_id}")
-    active_connections[session_id] = websocket
-    audio_chunks[session_id] = []
-    transcription_results[session_id] = []
-    
-    # 트랜스크립션 클라이언트 설정
-    client = TranscribeStreamingClient(region=AWS_REGION)
-    
-    try:
-        # 하트비트 메시지 처리를 위한 태스크
-        async def heartbeat():
-            while True:
-                await asyncio.sleep(30)  # 30초마다 하트비트 체크
-                try:
-                    await websocket.send_json({"type": "Heartbeat"})
-                    logger.debug("Heartbeat sent")
-                except:
-                    logger.warning("Failed to send heartbeat")
-                    break
-        
-        heartbeat_task = asyncio.create_task(heartbeat())
-        
-        # 언어 및 화자 구분 설정 수신
-        config = await websocket.receive_json()
-        logger.info(f"Received configuration: {config}")
-        language_code = config.get("language_code", "en-US")
-        enable_speaker_diarization = config.get("enable_speaker_diarization", False)
-        max_speaker_count = config.get("max_speaker_count", 4)
-        
-        # 스트림 설정 - 기본 파라미터
-        stream_params = {
-            "media_encoding": "pcm",
-            "media_sample_rate_hz": SAMPLE_RATE,
-            "language_code": language_code,
-            "enable_partial_results_stabilization": True,
-            "partial_results_stability": "high"
-        }
-        
-        # 화자 구분 활성화 시 로그만 남기고 파라미터는 추가하지 않음
-        if enable_speaker_diarization:
-            logger.warning(f"Speaker diarization requested with {max_speaker_count} speakers, but may not be supported in the current SDK version")
-
-        logger.info(f"Starting stream with parameters: {stream_params}")
-
-        # 스트림 시작 (handle_events 파라미터 없이)
-        handler = MyTranscriptResultStreamHandler(session_id)
-        stream = await client.start_stream_transcription(**stream_params)
-
-        # 핸들러 이벤트 처리를 위한 태스크 생성
-        # 수정된 부분: handler.handle_events 메서드에 output_stream 전달
-        handler_task = asyncio.create_task(handler.handle_events(stream.output_stream))
-        
-        # 오디오 데이터 수신 및 처리
-        chunk_count = 0
-        while True:
-            try:
-                data = await asyncio.wait_for(websocket.receive_bytes(), timeout=5.0)
-                audio_chunks[session_id].append(data)
-                await stream.input_stream.send_audio_event(audio_chunk=data)
-                chunk_count += 1
-                if chunk_count % 10 == 0:  # 로그 스패밍 방지
-                    logger.info(f"Received {chunk_count} audio chunks for session {session_id}")
-            except asyncio.TimeoutError:
-                logger.debug("Timeout waiting for audio data, continuing...")
-                continue
-            except Exception as e:
-                logger.error(f"Error receiving audio data: {str(e)}")
-                break
-            
-    except WebSocketDisconnect:
-        logger.info(f"Client disconnected: {session_id}")
-    except Exception as e:
-        logger.error(f"Error in WebSocket connection: {str(e)}")
-    finally:
-        logger.info(f"Cleaning up resources for session: {session_id}")
-        if session_id in active_connections:
-            del active_connections[session_id]
-        
-        # 스트림 종료
-        if 'stream' in locals():
-            await stream.input_stream.end_stream()
-            logger.info("Transcription stream ended")
-        
-        # 핸들러 태스크 취소
-        if 'handler_task' in locals():
-            handler_task.cancel()
-            logger.info("Handler task cancelled")
-        
-        # 하트비트 태스크 취소
-        if 'heartbeat_task' in locals():
-            heartbeat_task.cancel()
-            logger.info("Heartbeat task cancelled")
-
-@app.post("/save-audio/{session_id}")
-async def save_audio(session_id: str):
-    if session_id not in audio_chunks or not audio_chunks[session_id]:
-        logger.warning(f"No audio data found for session: {session_id}")
-        return {"error": "No audio data found for this session"}
-    
-    try:
-        # 오디오 데이터 합치기
-        audio_data = b''.join(audio_chunks[session_id])
-        logger.info(f"Combined audio data size: {len(audio_data)} bytes")
-        
-        # 현재 시간을 포함한 파일명 생성
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        audio_filename = f"{session_id}_{timestamp}.mp3"
-        text_filename = f"{session_id}_{timestamp}.txt"
-        
-        # 로컬에 오디오 파일 저장 (mp3 포맷)
-        audio_path = os.path.join(LOCAL_STORAGE_DIR, audio_filename)
-        
-        # mp3 파일 헤더 추가하여 저장
-        with wave.open(audio_path, 'wb') as mp3_file:
-            mp3_file.setnchannels(1)  # 모노
-            mp3_file.setsampwidth(2)  # 16-bit
-            mp3_file.setframerate(SAMPLE_RATE)  # 고정된 샘플 레이트 사용
-            mp3_file.writeframes(audio_data)
-        
-        logger.info(f"Audio saved to: {audio_path}")
-        
-        # 트랜스크립션 결과를 텍스트 파일로 저장
-        text_path = os.path.join(LOCAL_STORAGE_DIR, text_filename)
-        with open(text_path, 'w', encoding='utf-8') as text_file:
-            if session_id in transcription_results and transcription_results[session_id]:
-                text_file.write('\n'.join(transcription_results[session_id]))
-                logger.info(f"Saved {len(transcription_results[session_id])} transcription results")
-            else:
-                text_file.write("No transcription results available.")
-                logger.warning("No transcription results available to save")
-        
-        logger.info(f"Text saved to: {text_path}")
-        
-        result = {
-            "success": True,
-            "file_name": audio_filename,
-            "local_audio_path": audio_path,
-            "local_text_path": text_path,
-        }
-        
-        # S3에도 저장 (선택적)
-        if s3_client and S3_BUCKET:
-            try:
-                # S3에 오디오 파일 업로드
-                s3_client.put_object(
-                    Bucket=S3_BUCKET,
-                    Key=f"audio/{audio_filename}",
-                    Body=audio_data,
-                    ContentType="audio/mp3"
-                )
-                
-                # S3에 텍스트 파일 업로드
-                text_content = '\n'.join(transcription_results[session_id]) if session_id in transcription_results else "No transcription results available."
-                s3_client.put_object(
-                    Bucket=S3_BUCKET,
-                    Key=f"text/{text_filename}",
-                    Body=text_content,
-                    ContentType="text/plain"
-                )
-                
-                # S3 URL 생성
-                audio_s3_url = f"https://{S3_BUCKET}.s3.{AWS_REGION}.amazonaws.com/audio/{audio_filename}"
-                text_s3_url = f"https://{S3_BUCKET}.s3.{AWS_REGION}.amazonaws.com/text/{text_filename}"
-                
-                result["s3_audio_url"] = audio_s3_url
-                result["s3_text_url"] = text_s3_url
-                logger.info(f"Files uploaded to S3: {S3_BUCKET}")
-            except Exception as e:
-                logger.warning(f"S3 upload warning (continuing anyway): {str(e)}")
-        
-        # 업로드 후 로컬 데이터 정리
-        del audio_chunks[session_id]
-        if session_id in transcription_results:
-            del transcription_results[session_id]
-        
-        return result
-    
-    except Exception as e:
-        logger.error(f"Error saving files: {str(e)}")
-        return {"error": f"Failed to save files: {str(e)}"}
-
 # 업로드된 음성 파일 처리 엔드포인트
 @app.post("/upload-audio")
 async def upload_audio(
@@ -315,7 +170,7 @@ async def upload_audio(
     language_code: str = Form("ko-KR"),
     enable_speaker_diarization: str = Form("true"),
     max_speaker_count: str = Form("2"),
-    convert_to_mp3: str = Form("false")  # 새로운 파라미터 추가
+    convert_to_mp3: str = Form("false")
 ):
     try:
         # 임시 파일로 저장
@@ -422,101 +277,166 @@ async def upload_audio(
 @app.get("/job-status/{job_id}")
 async def get_job_status(job_id: str):
     try:
-        transcribe_client = boto3.client(
-            'transcribe',
-            region_name=AWS_REGION,
-            aws_access_key_id=AWS_ACCESS_KEY,
-            aws_secret_access_key=AWS_SECRET_KEY
-        )
-        
-        response = transcribe_client.get_transcription_job(
-            TranscriptionJobName=job_id
-        )
-        
-        job = response['TranscriptionJob']
-        status = job['TranscriptionJobStatus']
+        # S3에서 직접 트랜스크립션 결과 파일 찾기
+        s3_key = f"transcribe_results/{job_id}.json"
         
         result = {
             "job_id": job_id,
-            "status": status
+            "status": "UNKNOWN"
         }
         
-        if status == "COMPLETED":
-            # 트랜스크립션 결과 가져오기
-            transcript_uri = job['Transcript']['TranscriptFileUri']
+        try:
+            # S3에서 JSON 파일 가져오기
+            logger.info(f"Retrieving file from S3: {S3_BUCKET}/{s3_key}")
+            response = s3_client.get_object(Bucket=S3_BUCKET, Key=s3_key)
+            file_content = response['Body'].read().decode('utf-8')
+            transcript_data = json.loads(file_content)
+            logger.info(f"Successfully retrieved file from S3, content size: {len(file_content)} bytes")
             
-            # 결과 파일 다운로드
-            transcript_response = requests.get(transcript_uri)
-            if transcript_response.status_code == 200:
-                transcript_data = transcript_response.json()
-                
-                # 기본 텍스트 추출 (화자 구분 없는 단순 텍스트)
-                simple_transcript = transcript_data['results']['transcripts'][0]['transcript']
-                
-                # 화자 구분 결과 처리
-                formatted_transcript = simple_transcript
-                if 'speaker_labels' in transcript_data['results']:
-                    speakers = transcript_data['results']['speaker_labels']['speakers']
-                    segments = transcript_data['results']['speaker_labels']['segments']
-                    items = transcript_data['results']['items']
-                    
-                    # 화자별 텍스트 구성
-                    speaker_text = {}
-                    
-                    for segment in segments:
-                        speaker_label = segment['speaker_label']
-                        start_time = float(segment['start_time'])
-                        end_time = float(segment['end_time'])
-                        
-                        if speaker_label not in speaker_text:
-                            speaker_text[speaker_label] = []
-                        
-                        segment_items = [item for item in items 
-                                        if 'start_time' in item 
-                                        and float(item['start_time']) >= start_time 
-                                        and float(item['end_time']) <= end_time]
-                        
-                        segment_text = ' '.join([item['alternatives'][0]['content'] for item in segment_items])
-                        speaker_text[speaker_label].append(segment_text)
-                    
-                    # 화자별 텍스트 조합
-                    formatted_transcript_lines = []
-                    for speaker, texts in speaker_text.items():
-                        for text in texts:
-                            if text.strip():
-                                formatted_transcript_lines.append(f"[{speaker}] {text}")
-                    
-                    formatted_transcript = '\n'.join(formatted_transcript_lines)
-                
-                # 결과 저장 - 텍스트 파일
-                text_filename = f"{job_id}_transcript.txt"
-                text_path = os.path.join(LOCAL_STORAGE_DIR, text_filename)
-                
-                with open(text_path, 'w', encoding='utf-8') as text_file:
-                    text_file.write(formatted_transcript)
-                
-                logger.info(f"Transcription saved to: {text_path}")
-                
-                # S3에 텍스트 파일 저장 (text 폴더에)
-                if s3_client and S3_BUCKET:
-                    # text 폴더에 저장
-                    s3_text_key = f"text/{text_filename}"
-                    s3_client.put_object(
-                        Bucket=S3_BUCKET,
-                        Key=s3_text_key,
-                        Body=formatted_transcript,
-                        ContentType="text/plain"
-                    )
-                    
-                    text_url = f"https://{S3_BUCKET}.s3.{AWS_REGION}.amazonaws.com/{s3_text_key}"
-                    result["text_url"] = text_url
-                    logger.info(f"Text file uploaded to S3: {s3_text_key}")
-                
-                result["transcript"] = formatted_transcript
-                result["local_text_path"] = text_path
+            # 파일이 존재하면 상태를 COMPLETED로 설정
+            result["status"] = "COMPLETED"
             
-        elif status == "FAILED":
-            result["error"] = job.get('FailureReason', 'Unknown error')
+            # 파일명 추출
+            file_name = s3_key.split('/')[-1]
+            
+            # 기본 텍스트 추출 (화자 구분 없는 단순 텍스트)
+            simple_transcript = transcript_data['results']['transcripts'][0]['transcript']
+            
+            # 화자 구분 결과 처리
+            formatted_transcript = simple_transcript
+            if 'speaker_labels' in transcript_data['results']:
+                speakers = transcript_data['results']['speaker_labels']['speakers']
+                segments = transcript_data['results']['speaker_labels']['segments']
+                items = transcript_data['results']['items']
+                
+                # 화자별 텍스트 구성
+                speaker_text = {}
+                
+                for segment in segments:
+                    speaker_label = segment['speaker_label']
+                    start_time = float(segment['start_time'])
+                    end_time = float(segment['end_time'])
+                    
+                    if speaker_label not in speaker_text:
+                        speaker_text[speaker_label] = []
+                    
+                    segment_items = [item for item in items 
+                                    if 'start_time' in item 
+                                    and float(item['start_time']) >= start_time 
+                                    and float(item['end_time']) <= end_time]
+                    
+                    segment_text = ' '.join([item['alternatives'][0]['content'] for item in segment_items])
+                    speaker_text[speaker_label].append(segment_text)
+                
+                # 화자별 텍스트 조합
+                formatted_transcript_lines = []
+                for speaker, texts in speaker_text.items():
+                    for text in texts:
+                        if text.strip():
+                            formatted_transcript_lines.append(f"[{speaker}] {text}")
+                
+                formatted_transcript = '\n'.join(formatted_transcript_lines)
+            
+            # DynamoDB에 트랜스크립션 결과 저장
+            db_result = save_transcription_to_dynamodb(job_id, transcript_data, file_name)
+            if db_result:
+                logger.info(f"Successfully saved transcription to DynamoDB for job: {job_id}")
+                result["dynamodb_saved"] = True
+            else:
+                logger.warning(f"Failed to save transcription to DynamoDB for job: {job_id}")
+                result["dynamodb_saved"] = False
+            
+            # 결과에 트랜스크립트 포함 (프론트엔드 표시용)
+            result["transcript"] = formatted_transcript
+            
+        except s3_client.exceptions.NoSuchKey:
+            # S3에 파일이 없는 경우 Transcribe API로 상태 확인
+            logger.info(f"File not found in S3, checking job status via Transcribe API: {job_id}")
+            
+            transcribe_client = boto3.client(
+                'transcribe',
+                region_name=AWS_REGION,
+                aws_access_key_id=AWS_ACCESS_KEY,
+                aws_secret_access_key=AWS_SECRET_KEY
+            )
+            
+            response = transcribe_client.get_transcription_job(
+                TranscriptionJobName=job_id
+            )
+            
+            job = response['TranscriptionJob']
+            status = job['TranscriptionJobStatus']
+            
+            result["status"] = status
+            
+            if status == "COMPLETED":
+                # 트랜스크립션 결과 가져오기
+                transcript_uri = job['Transcript']['TranscriptFileUri']
+                
+                # 결과 파일 다운로드
+                transcript_response = requests.get(transcript_uri)
+                if transcript_response.status_code == 200:
+                    transcript_data = transcript_response.json()
+                    
+                    # 파일명 추출 (S3 경로에서)
+                    file_name = None
+                    if 'OutputKey' in job:
+                        file_name = job['OutputKey'].split('/')[-1]
+                    elif 'Media' in job and 'MediaFileUri' in job['Media']:
+                        file_name = job['Media']['MediaFileUri'].split('/')[-1]
+                    
+                    # 기본 텍스트 추출 (화자 구분 없는 단순 텍스트)
+                    simple_transcript = transcript_data['results']['transcripts'][0]['transcript']
+                    
+                    # 화자 구분 결과 처리
+                    formatted_transcript = simple_transcript
+                    if 'speaker_labels' in transcript_data['results']:
+                        speakers = transcript_data['results']['speaker_labels']['speakers']
+                        segments = transcript_data['results']['speaker_labels']['segments']
+                        items = transcript_data['results']['items']
+                        
+                        # 화자별 텍스트 구성
+                        speaker_text = {}
+                        
+                        for segment in segments:
+                            speaker_label = segment['speaker_label']
+                            start_time = float(segment['start_time'])
+                            end_time = float(segment['end_time'])
+                            
+                            if speaker_label not in speaker_text:
+                                speaker_text[speaker_label] = []
+                            
+                            segment_items = [item for item in items 
+                                            if 'start_time' in item 
+                                            and float(item['start_time']) >= start_time 
+                                            and float(item['end_time']) <= end_time]
+                            
+                            segment_text = ' '.join([item['alternatives'][0]['content'] for item in segment_items])
+                            speaker_text[speaker_label].append(segment_text)
+                        
+                        # 화자별 텍스트 조합
+                        formatted_transcript_lines = []
+                        for speaker, texts in speaker_text.items():
+                            for text in texts:
+                                if text.strip():
+                                    formatted_transcript_lines.append(f"[{speaker}] {text}")
+                        
+                        formatted_transcript = '\n'.join(formatted_transcript_lines)
+                    
+                    # DynamoDB에 트랜스크립션 결과 저장
+                    db_result = save_transcription_to_dynamodb(job_id, transcript_data, file_name)
+                    if db_result:
+                        logger.info(f"Successfully saved transcription to DynamoDB for job: {job_id}")
+                        result["dynamodb_saved"] = True
+                    else:
+                        logger.warning(f"Failed to save transcription to DynamoDB for job: {job_id}")
+                        result["dynamodb_saved"] = False
+                    
+                    # 결과에 트랜스크립트 포함 (프론트엔드 표시용)
+                    result["transcript"] = formatted_transcript
+                
+            elif status == "FAILED":
+                result["error"] = job.get('FailureReason', 'Unknown error')
         
         return result
     
@@ -524,28 +444,76 @@ async def get_job_status(job_id: str):
         logger.error(f"Error checking job status: {str(e)}")
         return {"error": f"Failed to check job status: {str(e)}"}
 
+
+# S3에서 Transcribe 결과 JSON 파일을 가져와 DynamoDB에 저장하는 엔드포인트
+@app.post("/save-transcription-from-s3")
+async def save_transcription_from_s3(
+    s3_key: str = Form(...),  # S3에 저장된 JSON 파일 경로
+    job_id: str = Form(None)  # 선택적 작업 ID (없으면 파일명에서 추출)
+):
+    try:
+        if not s3_client or not S3_BUCKET:
+            logger.error("S3 client not initialized or bucket not specified")
+            raise HTTPException(status_code=400, detail="S3 client not initialized or bucket not specified")
+        
+        # S3에서 JSON 파일 가져오기
+        try:
+            logger.info(f"Retrieving file from S3: {S3_BUCKET}/{s3_key}")
+            response = s3_client.get_object(Bucket=S3_BUCKET, Key=s3_key)
+            file_content = response['Body'].read().decode('utf-8')
+            transcript_data = json.loads(file_content)
+            logger.info(f"Successfully retrieved file from S3, content size: {len(file_content)} bytes")
+        except Exception as e:
+            logger.error(f"Error retrieving file from S3: {str(e)}")
+            raise HTTPException(status_code=404, detail=f"Failed to retrieve file from S3: {str(e)}")
+        
+        # 파일명 추출
+        file_name = s3_key.split('/')[-1]
+        logger.info(f"Extracted file name: {file_name}")
+        
+        # 작업 ID 설정 (제공되지 않은 경우 파일명에서 추출)
+        if not job_id:
+            # 파일명에서 작업 ID 추출 시도
+            job_id = file_name.replace('.json', '')
+            logger.info(f"Generated job_id from filename: {job_id}")
+        
+        logger.info(f"Saving transcription to DynamoDB: job_id={job_id}, file_name={file_name}")
+        
+        # DynamoDB에 저장
+        db_result = save_transcription_to_dynamodb(job_id, transcript_data, file_name)
+        
+        if db_result:
+            logger.info(f"Successfully saved transcription to DynamoDB for job: {job_id}")
+            return {
+                "success": True,
+                "message": f"Transcription saved to DynamoDB for job: {job_id}",
+                "job_id": job_id,
+                "file_name": file_name
+            }
+        else:
+            logger.error(f"Failed to save transcription to DynamoDB for job: {job_id}")
+            raise HTTPException(status_code=500, detail="Failed to save transcription to DynamoDB")
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error saving transcription from S3: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to save transcription from S3: {str(e)}")
+
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
-# 다중 언어 지원 여부 확인 엔드포인트 추가
+# 기능 정보 확인 엔드포인트
 @app.get("/features")
 async def get_features():
     features = {
         "supported_languages": ["en-US", "ko-KR", "ja-JP", "zh-CN"],
         "speaker_diarization": True,
         "max_speakers": 10,
-        "partial_results": True,
-        "sample_rate": SAMPLE_RATE,
-        "sdk_version": "Check amazon-transcribe package version"
+        "dynamodb_enabled": dynamodb is not None,
+        "s3_enabled": s3_client is not None
     }
-    
-    # SDK 버전 확인 시도
-    try:
-        import pkg_resources
-        features["sdk_version"] = pkg_resources.get_distribution("amazon-transcribe").version
-    except Exception as e:
-        features["sdk_version"] = f"Unknown (error: {str(e)})"
     
     return features
 
