@@ -4,7 +4,7 @@
       {
         "Effect": "Allow",
         "Action": "s3:PutObject",
-        "Resource": "arn:aws:s3:::raw-voice-test-bucket/*"
+        "Resource": "arn:aws:s3:::globa-audio-bucket/*"
       }
     ]
   }
