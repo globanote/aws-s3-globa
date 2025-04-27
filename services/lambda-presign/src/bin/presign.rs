@@ -11,6 +11,7 @@ struct PresignRequest {
     bucket: String,
     key: String,
     content_type: String,
+    user_id: String,
 }
 
 #[derive(Serialize)]
@@ -58,7 +59,8 @@ async fn handler(event: LambdaEvent<Value>) -> Result<Value, Error> {
         }
     };
     
-    // S3 presign
+    // S3 presign + 사용자별 키 설정
+    let user_key= format!("users/{}/recordings/{}", pres.user_id, pres.key);
     let conf = aws_config::load_from_env().await;
     let client = S3Client::new(&conf);
     let presign_cfg = match PresigningConfig::builder()
@@ -77,7 +79,7 @@ async fn handler(event: LambdaEvent<Value>) -> Result<Value, Error> {
     let presigned = match client
         .put_object()
         .bucket(&pres.bucket)
-        .key(&pres.key)
+        .key(&user_key)
         .content_type(&pres.content_type)
         .presigned(presign_cfg)
         .await {
