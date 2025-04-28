@@ -9,6 +9,7 @@ globanote/backend/*.env
 *.idea/
 *.vscode/
 */.venv
+react_frontend/node_modules/
 # OS 파일
 .DS_Store
 
