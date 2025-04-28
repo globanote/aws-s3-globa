@@ -203,7 +203,7 @@ body {
   }
   
   .calendar-left {
-    flex: 0.8;
+    flex: 0.98;
     background: white;
     border-radius: 8px;
     padding: 20px;
@@ -403,6 +403,7 @@ body {
   }
   
   .sidebar-menu {
+    width: 220px;
     flex-grow: 1;
     padding: 20px 0;
   }
@@ -500,11 +501,6 @@ body {
     gap: 20px;
   }
   
-  .dashboard-title {
-    font-size: 1.8rem;
-    margin-bottom: 20px;
-  }
-  
   .dashboard-top-section {
     display: flex;
     gap: 20px;
@@ -542,6 +538,7 @@ body {
   .usage-tracker h2 {
     font-size: 1.3rem;
     margin-bottom: 15px;
+    margin-top: 0px;
   }
   
   .usage-header {
@@ -580,6 +577,7 @@ body {
   .meeting-chatbot h2 {
     font-size: 1.3rem;
     margin-bottom: 15px;
+    margin-top: 0px;
   }
   
   .chatbot-messages {
@@ -875,52 +873,6 @@ body {
   font-family: 'Pretendard', 'Noto Sans KR', Arial, sans-serif;
 }
 
-.ai-sidebar {
-  width: 220px;
-  background: #fff;
-  border-right: 1.5px solid #e5e7eb;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 0 0 24px 0;
-}
-.ai-sidebar-title {
-  font-size: 1.5rem;
-  font-weight: bold;
-  padding: 32px 0 24px 32px;
-  letter-spacing: -1px;
-}
-.ai-sidebar-menu {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding-left: 16px;
-}
-.ai-sidebar-item {
-  padding: 12px 0 12px 16px;
-  font-size: 1.08rem;
-  color: #374151;
-  border-radius: 8px 0 0 8px;
-  cursor: pointer;
-  margin-bottom: 2px;
-  transition: background 0.15s, color 0.15s;
-}
-.ai-sidebar-item.active {
-  background: #e0e7ff;
-  color: #3b82f6;
-  font-weight: 600;
-}
-.ai-sidebar-item:hover {
-  background: #f3f6fd;
-  color: #3b82f6;
-}
-.ai-sidebar-bottom {
-  padding: 0 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
 .ai-newnote-btn {
   background: #3b82f6;
   color: #fff;
@@ -1656,8 +1608,7 @@ body {
   overflow-y: auto;
   margin-bottom: 8px;
   font-size: 0.97rem;
-  min-height: 60px;
-  max-height: 120px;
+  max-height: 100%;
 }
 .message {
   margin-bottom: 6px;
@@ -1824,4 +1775,134 @@ body {
   .note-content-card { padding: 18px 8px 18px 8px; margin-right: 0; }
   .note-right { width: 100px; min-width: 60px; }
   .note-footer-bar { left: 180px; width: calc(100% - 180px - 0px); padding: 0 8px; }
+}
+
+/*GlobalNoteCreation*/
+.global-note-create-root {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(120deg, #f8fafc 0%, #e0e7ff 100%);
+}
+.global-note-create-card {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(60,80,180,0.10);
+  padding: 48px 40px 40px 40px;
+  min-width: 380px;
+  max-width: 95vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  animation: fadeIn 0.7s;
+}
+.global-note-create-card h2 {
+  font-size: 1.7rem;
+  color: #3b82f6;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+.global-note-create-btns {
+  display: flex;
+  gap: 24px;
+  margin-top: 18px;
+}
+.main-btn {
+  background: linear-gradient(90deg, #3b82f6 0%, #6366f1 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 16px 36px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(60,80,180,0.08);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.main-btn:hover {
+  background: linear-gradient(90deg, #2563eb 0%, #7c3aed 100%);
+  box-shadow: 0 4px 16px rgba(60,80,180,0.12);
+}
+.sub-btn {
+  background: #f3f6fd;
+  color: #3b82f6;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-left: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.sub-btn:hover { background: #e0e7ff; }
+
+.note-create-form, .note-upload-form {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  animation: fadeInUp 0.5s;
+}
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.form-group label {
+  font-weight: 600;
+  color: #374151;
+}
+.form-group input, .form-group textarea {
+  padding: 10px 12px;
+  border: 1.5px solid #e0e7ff;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: #f9fafb;
+  transition: border 0.2s;
+}
+.form-group input:focus, .form-group textarea:focus {
+  border: 1.5px solid #6366f1;
+  outline: none;
+  background: #fff;
+}
+.form-btns {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+.upload-drop-area {
+  border: 2px dashed #3b82f6;
+  border-radius: 10px;
+  background: #f3f6fd;
+  padding: 36px 0;
+  text-align: center;
+  color: #3b82f6;
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+  transition: background 0.2s, border 0.2s;
+}
+.upload-drop-area:hover {
+  background: #e0e7ff;
+  border-color: #6366f1;
+}
+.upload-placeholder {
+  color: #6366f1;
+  font-size: 1.05rem;
+}
+.file-info {
+  color: #2563eb;
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.98);}
+  to { opacity: 1; transform: scale(1);}
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px);}
+  to { opacity: 1; transform: translateY(0);}
 }
