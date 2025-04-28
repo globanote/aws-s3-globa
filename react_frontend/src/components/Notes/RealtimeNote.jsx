@@ -92,9 +92,8 @@ function RealtimeNote() {
       </aside>
       {/* 중앙: 실시간 노트 */}
       <main className="realtime-main">
-        <div className="note-title">글로바노트</div>
+        <div className="note-title">실시간 노트</div>
         <div className="note-card">
-          <h3>실시간 노트</h3>
           <div className="note-list">
             {notes.map((note, idx) => (
               <div key={idx} className="note-line">

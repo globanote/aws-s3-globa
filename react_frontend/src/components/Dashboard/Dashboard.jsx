@@ -17,7 +17,6 @@ function Dashboard({ user }) {
 
   return (
     <div className="dashboard-container">
-      <h1 className="dashboard-title">대시보드</h1>
       <div className="dashboard-top-section">
         <div className="dashboard-left">
           <UsageTracker user={user} />
