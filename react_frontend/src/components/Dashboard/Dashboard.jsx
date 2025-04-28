@@ -1,0 +1,36 @@
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import UsageTracker from './UsageTracker';
+import MeetingChatbot from './MeetingChatbot';
+import Calendar from './Calendar';
+
+function Dashboard({ user }) {
+  const navigate = useNavigate();
+  
+  const handleDateClick = (date) => {
+    console.log('Selected date:', date);
+  };
+
+  const handleScheduleClick = (schedule) => {
+    console.log('Selected schedule:', schedule);
+  };
+
+  return (
+    <div className="dashboard-container">
+      <h1 className="dashboard-title">대시보드</h1>
+      <div className="dashboard-top-section">
+        <div className="dashboard-left">
+          <UsageTracker user={user} />
+        </div>
+        <div className="dashboard-right">
+          <MeetingChatbot />
+        </div>
+      </div>
+      <div className="dashboard-bottom-section">
+        <Calendar onDateClick={handleDateClick} onScheduleClick={handleScheduleClick} />
+      </div>
+    </div>
+  );
+}
+
+export default Dashboard;
