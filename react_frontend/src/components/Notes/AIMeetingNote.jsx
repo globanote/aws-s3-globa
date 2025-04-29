@@ -45,6 +45,38 @@ function AIMeetingNote() {
     }
   };
 
+  const handleExport = () => {
+    if (viewMode === 'transcript') {
+      const content = transcriptContent.map(line => 
+        `${line.time} [${line.speaker}] ${line.content}`
+      ).join('\n');
+      
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '회의록_트랜스크립트.txt';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } else {
+      const content = Array.isArray(summaryContent[summaryType].content)
+        ? summaryContent[summaryType].content.join('\n')
+        : summaryContent[summaryType].content;
+      
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '회의록_요약.txt';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  };
+
   return (
     <div className="ai-meetingnote-root">
       {/* 중앙: 미팅 히스토리 */}
@@ -79,7 +111,7 @@ function AIMeetingNote() {
             </button>
           </div>
           <div className="ai-note-actions">
-            <button className="ai-export-btn">Export</button>
+            <button className="ai-export-btn" onClick={handleExport}>내보내기</button>
           </div>
         </div>
         <div className="ai-note-body">

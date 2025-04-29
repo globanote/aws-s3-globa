@@ -280,19 +280,26 @@
   gap: 8px;
 }
 .ai-export-btn {
-  background: #f3f6fd;
-  color: #3b82f6;
+  background: #8b5cf6;
+  color: #fff;
   border: none;
   border-radius: 6px;
   padding: 8px 18px;
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  transition: background 0.2s, box-shadow 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 .ai-export-btn:hover {
-  background: #3b82f6;
-  color: #fff;
+  background: #7c3aed;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+}
+.ai-export-btn:active {
+  background: #6d28d9;
+  box-shadow: 0 1px 4px rgba(139, 92, 246, 0.2);
 }
 
 .ai-note-body {

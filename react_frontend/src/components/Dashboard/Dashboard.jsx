@@ -2,7 +2,6 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import UsageTracker from './UsageTracker';
 import MeetingChatbot from './MeetingChatbot';
-import Calendar from './Calendar';
 import '../../styles/dashboard.css';
 
 function Dashboard({ user }) {
@@ -25,9 +24,6 @@ function Dashboard({ user }) {
         <div className="dashboard-right">
           <MeetingChatbot />
         </div>
-      </div>
-      <div className="dashboard-bottom-section">
-        <Calendar onDateClick={handleDateClick} onScheduleClick={handleScheduleClick} />
       </div>
     </div>
   );

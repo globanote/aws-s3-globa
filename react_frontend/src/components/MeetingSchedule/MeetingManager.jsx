@@ -10,6 +10,14 @@ function MeetingManager() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [createDate, setCreateDate] = useState(null);
 
+  // KPI 데이터
+  const kpiData = {
+    requested: 24,
+    approved: 18,
+    cancelled: 3,
+    pending: 3
+  };
+
   const meetings = [
     { id: 1, title: 'Project Update', time: '09:00 - 10:00', participants: ['김유리', '박지연', '이민호'], color: 'blue', date: '2025-05-08', desc: '프로젝트 현황 공유 및 이슈 논의' },
     { id: 2, title: 'Team Sync', time: '11:00 - 12:00', participants: ['김유리', '박지연'], color: 'orange', date: '2025-05-08', desc: '팀 업무 동기화' },
@@ -121,7 +129,9 @@ function MeetingManager() {
       return (
         <div className="month-view">
           <div className="month-header">
+            <button className="header-nav-btn" onClick={handlePrev}>←</button>
             <h3>{currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월</h3>
+            <button className="header-nav-btn" onClick={handleNext}>→</button>
           </div>
           <div className="weekday-header">
             {['SUN','MON','TUE','WED','THU','FRI','SAT'].map((d, i) => <div key={i} className="weekday">{d}</div>)}
@@ -155,7 +165,9 @@ function MeetingManager() {
       return (
         <div className="week-view">
           <div className="week-header">
+            <button className="header-nav-btn" onClick={handlePrev}>←</button>
             <h3>{weekDates[0].toLocaleDateString()} - {weekDates[6].toLocaleDateString()}</h3>
+            <button className="header-nav-btn" onClick={handleNext}>→</button>
           </div>
           <div className="weekday-header">
             {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map((d, i) => <div key={i} className="weekday">{d}</div>)}
@@ -165,49 +177,72 @@ function MeetingManager() {
               <div key={hour} className="time-slot">
                 <div className="time-label">{hour}:00</div>
                 <div className="time-grid">
-                  {weekDates.map((date, j) => (
-                    <div key={j} className="time-cell" onClick={() => handleCellClick(date)}></div>
-                  ))}
+                  {weekDates.map((date, j) => {
+                    // 해당 셀의 날짜와 시간에 해당하는 미팅 찾기
+                    const cellDateStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+                    const cellMeetings = meetings.filter(m => {
+                      if (m.date !== cellDateStr) return false;
+                      // 시간대 매칭 (간단히 시작 시간이 hour와 같은지 체크)
+                      const startHour = parseInt(m.time.split(':')[0], 10);
+                      return startHour === hour;
+                    });
+                    return (
+                      <div key={j} className="time-cell" onClick={() => handleCellClick(date)}>
+                        {cellMeetings.map((m, idx) => (
+                          <div
+                            key={idx}
+                            className="week-event"
+                            style={{backgroundColor: m.color === 'blue' ? '#bfdbfe' : m.color === 'orange' ? '#fed7aa' : '#fecaca'}}
+                            onClick={e => { e.stopPropagation(); handleMeetingClick(m); }}
+                          >
+                            {m.title}
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ))}
-            {/* 예시: 이벤트 표시 (실제 구현시 시간대별 위치 계산 필요) */}
-            <div className="week-event" style={{top: '30px', left: '85px', width: '14%', height: '60px', backgroundColor: '#bfdbfe'}} onClick={() => handleMeetingClick(meetings[0])}>
-              Project Update
-            </div>
-            <div className="week-event" style={{top: '120px', left: '85px', width: '14%', height: '60px', backgroundColor: '#fed7aa'}} onClick={() => handleMeetingClick(meetings[1])}>
-              Team Sync
-            </div>
-            <div className="week-event" style={{top: '280px', left: '85px', width: '14%', height: '90px', backgroundColor: '#fecaca'}} onClick={() => handleMeetingClick(meetings[2])}>
-              Client Meeting
-            </div>
           </div>
         </div>
       );
     }
     if (view === 'day') {
+      const todayStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth()+1).padStart(2,'0')}-${String(currentDate.getDate()).padStart(2,'0')}`;
       return (
         <div className="day-view">
           <div className="day-header">
+            <button className="header-nav-btn" onClick={handlePrev}>←</button>
             <h3>{currentDate.toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric'})}</h3>
+            <button className="header-nav-btn" onClick={handleNext}>→</button>
           </div>
           <div className="day-schedule">
-            {getDayHours().map(hour => (
-              <div key={hour} className="hour-slot" onClick={() => handleCellClick(currentDate)}>
-                <div className="hour-label">{hour}:00</div>
-                <div className="hour-content"></div>
-              </div>
-            ))}
-            {/* 예시: 이벤트 표시 (실제 구현시 시간대별 위치 계산 필요) */}
-            <div className="day-event" style={{top: '30px', left: '80px', right: '20px', height: '60px', backgroundColor: '#bfdbfe'}} onClick={() => handleMeetingClick(meetings[0])}>
-              Meeting with HR Team
-            </div>
-            <div className="day-event" style={{top: '120px', left: '80px', right: '20px', height: '60px', backgroundColor: '#fed7aa'}} onClick={() => handleMeetingClick(meetings[1])}>
-              Team Sync
-            </div>
-            <div className="day-event" style={{top: '280px', left: '80px', right: '20px', height: '90px', backgroundColor: '#fecaca'}} onClick={() => handleMeetingClick(meetings[2])}>
-              Client Meeting
-            </div>
+            {getDayHours().map(hour => {
+              // 해당 시간대의 미팅 찾기
+              const cellMeetings = meetings.filter(m => {
+                if (m.date !== todayStr) return false;
+                const startHour = parseInt(m.time.split(':')[0], 10);
+                return startHour === hour;
+              });
+              return (
+                <div key={hour} className="hour-slot" onClick={() => handleCellClick(currentDate)}>
+                  <div className="hour-label">{hour}:00</div>
+                  <div className="hour-content">
+                    {cellMeetings.map((m, idx) => (
+                      <div
+                        key={idx}
+                        className="day-event"
+                        style={{backgroundColor: m.color === 'blue' ? '#bfdbfe' : m.color === 'orange' ? '#fed7aa' : '#fecaca'}}
+                        onClick={e => { e.stopPropagation(); handleMeetingClick(m); }}
+                      >
+                        {m.title}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       );
@@ -215,29 +250,44 @@ function MeetingManager() {
     return <div>Invalid view</div>;
   };
 
+  // KPI 카드 컴포넌트
+  const KPICard = ({ title, value, color }) => (
+    <div className="kpi-card" style={{ borderLeft: `4px solid ${color}` }}>
+      <div className="kpi-title">{title}</div>
+      <div className="kpi-value">{value}</div>
+    </div>
+  );
+
   return (
+    <div>
+    <div className="kpi-dashboard">
+          <KPICard title="요청된 미팅" value={kpiData.requested} color="#3b82f6" />
+          <KPICard title="승인된 미팅" value={kpiData.approved} color="#10b981" />
+          <KPICard title="취소된 미팅" value={kpiData.cancelled} color="#ef4444" />
+          <KPICard title="대기중인 미팅" value={kpiData.pending} color="#f59e0b" />
+    </div>
     <div className="meeting-manager2col">
+
       <div className="manager-main">
         <div className="manager-header">
-          <h2>미팅관리</h2>
           <div className="view-selector">
             <button 
               className={`view-btn ${view === 'month' ? 'active' : ''}`}
               onClick={() => changeView('month')}
             >
-              Monthly
+              월별
             </button>
             <button 
               className={`view-btn ${view === 'week' ? 'active' : ''}`}
               onClick={() => changeView('week')}
             >
-              Weekly
+              주별
             </button>
             <button 
               className={`view-btn ${view === 'day' ? 'active' : ''}`}
               onClick={() => changeView('day')}
             >
-              Daily
+              일별
             </button>
           </div>
         </div>
@@ -275,6 +325,7 @@ function MeetingManager() {
         {showCreateDialog && <MeetingCreateModal date={createDate} onClose={() => setShowCreateDialog(false)} />}
       </div>
     </div>
+  </div>
   );
 }
 
