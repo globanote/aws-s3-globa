@@ -37,16 +37,6 @@ function RealtimeNote() {
       const [, blob] = await Mp3Recorder.stop().getMp3(); // buffer 미사용, eslint 경고 해결
       audioBlobRef.current = blob;
       setIsRecording(false);
-      
-      // 녹음이 완료되면 로컬에 파일 저장
-      const audioUrl = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = audioUrl;
-      link.download = `recording_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.mp3`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(audioUrl);
     } catch (err) {
       alert('녹음 중 오류가 발생했습니다.');
       setIsRecording(false);
@@ -79,9 +69,7 @@ function RealtimeNote() {
       return;
     }
     try {
-      console.log('test1');
       const audioBase64 = await blobToBase64(audioBlobRef.current);
-      console.log('test2');
       const response = await fetch('https://4u8cc1twf2.execute-api.ap-northeast-2.amazonaws.com/prod/record-audio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -90,18 +78,13 @@ function RealtimeNote() {
           file_format: 'mp3',
         }),
       });
-      console.log('test3');
       const result = await response.json();
       
-      console.log(result)
       if (result.success) {
-        alert('저장 및 S3 업로드 성공!');
-        navigate('/ai-meeting-note');
-      } else {
-        alert('오류: ' + (result.error || '저장 실패'));
+        // navigate('/ai-meeting-note');
       }
     } catch (err) {
-      alert('저장 중 오류 발생: ' + err.message);
+      console.error('저장 중 오류 발생:', err.message);
     }
   };
 
