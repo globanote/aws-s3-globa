@@ -1,221 +1,86 @@
-import React, { useState } from 'react';
-import { FaUser, FaLock, FaEnvelope, FaArrowLeft } from 'react-icons/fa';
+// Login.jsx
+import React from 'react';
+import { useAuth } from 'react-oidc-context';
+import { FaUser, FaSpinner } from 'react-icons/fa';
 import '../styles/login.css';
 
-function Login({ onLogin }) {
-  const [id, setId] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPasswordReset, setShowPasswordReset] = useState(false);
-  const [showSignup, setShowSignup] = useState(false);
-  const [resetEmail, setResetEmail] = useState('');
-  const [signupData, setSignupData] = useState({
-    id: '',
-    password: '',
-    confirmPassword: '',
-    name: '',
-    email: ''
-  });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onLogin(id, password);
+function Login() {
+  const auth = useAuth();
+  
+  // 로그아웃 리다이렉트 함수
+  const signOutRedirect = () => {
+    const clientId = "dfjbvb8sjealspdl43k3rcm5i";
+    // 로컬 개발 환경에 맞게 로그아웃 URL 설정
+    const logoutUri = "http://localhost:3000";
+    const cognitoDomain = "https://ap-northeast-2q4k5dfkvu.auth.ap-northeast-2.amazoncognito.com";
+    window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}`;
   };
 
-  const handlePasswordReset = (e) => {
-    e.preventDefault();
-    // 비밀번호 재설정 로직 구현
-    alert('비밀번호 재설정 링크가 이메일로 전송되었습니다.');
-    setShowPasswordReset(false);
-  };
-
-  const handleSignup = (e) => {
-    e.preventDefault();
-    // 회원가입 로직 구현
-    alert('회원가입이 완료되었습니다.');
-    setShowSignup(false);
-  };
-
-  const handleSignupChange = (e) => {
-    const { name, value } = e.target;
-    setSignupData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  if (showPasswordReset) {
+  // auth가 undefined인 경우 로딩 화면 표시
+  if (!auth) {
     return (
       <div className="auth-container">
         <div className="auth-card">
-          <button className="back-button" onClick={() => setShowPasswordReset(false)}>
-            <FaArrowLeft /> 돌아가기
-          </button>
-          <h2>비밀번호 재설정</h2>
-          <form onSubmit={handlePasswordReset}>
-            <div className="form-group">
-              <label htmlFor="reset-email">이메일</label>
-              <div className="input-with-icon">
-                <FaEnvelope className="input-icon" />
-                <input
-                  id="reset-email"
-                  type="email"
-                  value={resetEmail}
-                  onChange={(e) => setResetEmail(e.target.value)}
-                  placeholder="이메일을 입력하세요"
-                  required
-                />
-              </div>
-            </div>
-            <button type="submit" className="auth-btn primary">비밀번호 재설정 링크 전송</button>
-          </form>
+          <div className="loading">
+            <FaSpinner className="spin-icon" />
+            <p>인증 컨텍스트 초기화 중...</p>
+          </div>
         </div>
       </div>
     );
   }
 
-  if (showSignup) {
+  // 로딩 중일 때 표시
+  if (auth.isLoading) {
     return (
       <div className="auth-container">
         <div className="auth-card">
-          <button className="back-button" onClick={() => setShowSignup(false)}>
-            <FaArrowLeft /> 돌아가기
-          </button>
-          <h2>회원가입</h2>
-          <form onSubmit={handleSignup}>
-            <div className="form-group">
-              <label htmlFor="signup-id">아이디</label>
-              <div className="input-with-icon">
-                <FaUser className="input-icon" />
-                <input
-                  id="signup-id"
-                  type="text"
-                  name="id"
-                  value={signupData.id}
-                  onChange={handleSignupChange}
-                  placeholder="아이디를 입력하세요"
-                  required
-                />
-              </div>
-            </div>
-            <div className="form-group">
-              <label htmlFor="signup-password">비밀번호</label>
-              <div className="input-with-icon">
-                <FaLock className="input-icon" />
-                <input
-                  id="signup-password"
-                  type="password"
-                  name="password"
-                  value={signupData.password}
-                  onChange={handleSignupChange}
-                  placeholder="비밀번호를 입력하세요"
-                  required
-                />
-              </div>
-            </div>
-            <div className="form-group">
-              <label htmlFor="confirm-password">비밀번호 확인</label>
-              <div className="input-with-icon">
-                <FaLock className="input-icon" />
-                <input
-                  id="confirm-password"
-                  type="password"
-                  name="confirmPassword"
-                  value={signupData.confirmPassword}
-                  onChange={handleSignupChange}
-                  placeholder="비밀번호를 다시 입력하세요"
-                  required
-                />
-              </div>
-            </div>
-            <div className="form-group">
-              <label htmlFor="name">이름</label>
-              <div className="input-with-icon">
-                <FaUser className="input-icon" />
-                <input
-                  id="name"
-                  type="text"
-                  name="name"
-                  value={signupData.name}
-                  onChange={handleSignupChange}
-                  placeholder="이름을 입력하세요"
-                  required
-                />
-              </div>
-            </div>
-            <div className="form-group">
-              <label htmlFor="email">이메일</label>
-              <div className="input-with-icon">
-                <FaEnvelope className="input-icon" />
-                <input
-                  id="email"
-                  type="email"
-                  name="email"
-                  value={signupData.email}
-                  onChange={handleSignupChange}
-                  placeholder="이메일을 입력하세요"
-                  required
-                />
-              </div>
-            </div>
-            <button type="submit" className="auth-btn primary">회원가입</button>
-          </form>
+          <div className="loading">
+            <FaSpinner className="spin-icon" />
+            <p>로딩 중입니다...</p>
+          </div>
         </div>
       </div>
     );
   }
 
+  // 에러 발생 시 표시
+  if (auth.error) {
+    return (
+      <div className="auth-container">
+        <div className="auth-card error-card">
+          <h2>오류가 발생했습니다</h2>
+          <p>{auth.error.message}</p>
+          <button 
+            className="auth-btn primary" 
+            onClick={() => window.location.reload()}
+          >
+            다시 시도
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 로그인 화면
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h2>로그인</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="login-id">아이디</label>
-            <div className="input-with-icon">
-              <FaUser className="input-icon" />
-              <input
-                id="login-id"
-                type="text"
-                value={id}
-                onChange={(e) => setId(e.target.value)}
-                placeholder="아이디를 입력하세요"
-                required
-              />
-            </div>
-          </div>
-          <div className="form-group">
-            <label htmlFor="login-password">비밀번호</label>
-            <div className="input-with-icon">
-              <FaLock className="input-icon" />
-              <input
-                id="login-password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="비밀번호를 입력하세요"
-                required
-              />
-            </div>
-          </div>
+        <h2>글로봐 서비스에 오신 것을 환영합니다</h2>
+        <p className="login-desc">
+          AWS Cognito 계정으로 로그인하여 서비스를 이용해 보세요.
+        </p>
+        <div className="button-group">
           <button 
-            type="button" 
-            className="password-reset-btn"
-            onClick={() => setShowPasswordReset(true)}
+            className="auth-btn primary" 
+            onClick={() => auth.signinRedirect()}
           >
-            비밀번호를 잊으셨나요?
+            로그인
           </button>
-          <button type="submit" className="auth-btn primary">로그인</button>
-          <button 
-            type="button" 
-            className="auth-btn secondary"
-            onClick={() => setShowSignup(true)}
-          >
-            회원가입
-          </button>
-        </form>
+        </div>
       </div>
     </div>
   );
 }
 
-export default Login; 
+export default Login;

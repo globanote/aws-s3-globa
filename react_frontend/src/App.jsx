@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+// App.js
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from 'react-oidc-context';
 import Sidebar from './components/Sidebar';
 import NotFound from './components/NotFound';
 import Dashboard from './components/Dashboard/Dashboard';
@@ -13,34 +15,58 @@ import Login from './components/Login';
 import './styles/app.css';
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [user, setUser] = useState({
-    name: 'Yunhee Kim',
-    email: 'zyv@gmail.com',
-    profileImage: '/profile.jpg',
-    usage: {
-      days: 7,
-      totalAmount: '₩30,000'
+  const auth = useAuth();
+  
+  // Cognito 사용자 정보를 사용
+  const getUserInfo = () => {
+    if (auth.isAuthenticated && auth.user) {
+      return {
+        name: auth.user.profile.name || auth.user.profile.email || 'User',
+        email: auth.user.profile.email || 'example@email.com',
+        profileImage: '/profile.jpg',
+        usage: {
+          days: 7,
+          totalAmount: '₩30,000'
+        }
+      };
     }
-  });
-
-  const handleLogin = (id, password) => {
-    // 임시 로컬 데이터 참조 (실제 인증 로직은 추후 구현)
-    if (id === 'admin' && password === 'admin') {
-      setIsLoggedIn(true);
-    } else {
-      alert('아이디 또는 비밀번호가 잘못되었습니다.');
-    }
+    
+    // 기본값 반환
+    return {
+      name: 'Guest User',
+      email: 'guest@example.com',
+      profileImage: '/profile.jpg',
+      usage: {
+        days: 0,
+        totalAmount: '₩0'
+      }
+    };
   };
-
+  
+  // 로그아웃 핸들러
   const handleLogout = () => {
-    setIsLoggedIn(false);
+    auth.removeUser();
   };
 
-  if (!isLoggedIn) {
-    return <Login onLogin={handleLogin} />;
+  // 로딩 중일 때
+  if (auth.isLoading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>로딩 중입니다...</p>
+      </div>
+    );
   }
 
+  // 인증되지 않았을 때 Login 컴포넌트 렌더링
+  if (!auth.isAuthenticated) {
+    return <Login />;
+  }
+
+  // 사용자 정보 가져오기
+  const user = getUserInfo();
+
+  // 인증된 경우 앱 렌더링
   return (
     <Router>
       <div className="app-container">
@@ -48,6 +74,7 @@ function App() {
         <div className="content-container">
           <Routes>
             <Route path="/" element={<Dashboard user={user} />} />
+            <Route path="/auth-callback" element={<Navigate to="/" />} />
             <Route path="/meeting-reservation" element={<MeetingReservation />} />
             <Route path="/upcoming-meeting" element={<UpcomingMeeting />} />
             <Route path="/global-note-create" element={<GlobalNoteCreate />} />
@@ -55,8 +82,6 @@ function App() {
             <Route path="/ai-meeting-note" element={<AIMeetingNote />} />
             <Route path="/meeting-manager/:view" element={<MeetingManager />} />
             <Route path="/meeting-manager" element={<Navigate to="/meeting-manager/month" />} />
-            {/* <Route path="*" element={<Navigate to="/" />} />*/}
-            {/* 여기! 모든 다른 경로는 NotFound로 */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </div>
