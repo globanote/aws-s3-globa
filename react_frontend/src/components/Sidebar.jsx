@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaCalendarAlt, FaStickyNote, FaRobot, FaSignOutAlt, FaRegChartBar, FaRegStickyNote, FaRegCalendarCheck, FaUserCircle, FaCog } from 'react-icons/fa';
+import '../styles/sidebar.css';
 
 function Sidebar({ user, onLogout }) {
   const navigate = useNavigate();

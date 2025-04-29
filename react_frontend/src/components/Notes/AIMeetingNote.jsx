@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import '../../styles/notes.css';
 
 function AIMeetingNote() {
   const [viewMode, setViewMode] = useState('transcript'); // 'transcript' or 'summary'

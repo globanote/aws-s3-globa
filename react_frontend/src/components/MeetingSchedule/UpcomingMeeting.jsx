@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import '../../styles/meetingschedule.css';
 
 function UpcomingMeeting() {
   const location = useLocation();

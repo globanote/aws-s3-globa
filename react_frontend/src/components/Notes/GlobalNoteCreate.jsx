@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import '../../styles/notes.css';
 
 function GlobalNoteCreate() {
   const navigate = useNavigate();

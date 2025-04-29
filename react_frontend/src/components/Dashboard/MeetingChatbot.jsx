@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import '../../styles/dashboard.css';
 
 function MeetingChatbot() {
   const [messages, setMessages] = useState([

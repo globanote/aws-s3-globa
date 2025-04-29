@@ -1,10 +1,11 @@
 import React from 'react';
+import '../../styles/dashboard.css';
 
 function UsageTracker({ user }) {
   const dummyStats = {
-    meetingTime: '미팅 시간 비 그래프 (7주평균)',
-    activeUsers: '음성 분석 사용자 그래프 (7주평균) 가격',
-    newUsers: '첫번 사용량 7주평균 가격'
+    meetingTime: '미팅 시간',
+    activeUsers: 'AI 사용량',
+    newUsers: '청구 금액'
   };
 
   return (

@@ -10,7 +10,7 @@ import RealtimeNote from './components/Notes/RealtimeNote';
 import AIMeetingNote from './components/Notes/AIMeetingNote';
 import MeetingManager from './components/MeetingSchedule/MeetingManager';
 import Login from './components/Login';
-import './styles.css';
+import './styles/app.css';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);

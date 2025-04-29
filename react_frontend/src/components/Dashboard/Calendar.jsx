@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import '../../styles/dashboard.css';
 
 function Calendar({ onDateClick, onScheduleClick }) {
   const [currentDate, setCurrentDate] = useState(new Date(2025, 4, 1)); // May 2025

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FaUser, FaLock, FaEnvelope, FaArrowLeft } from 'react-icons/fa';
+import '../styles/login.css';
 
 function Login({ onLogin }) {
   const [id, setId] = useState('');
