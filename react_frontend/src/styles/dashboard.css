@@ -16,7 +16,7 @@ body {
   .dashboard-top-section {
     display: flex;
     gap: 20px;
-    height: 40%;
+    height: 100%;
   }
   
   .dashboard-left {
@@ -89,6 +89,7 @@ body {
     font-size: 1.3rem;
     margin-bottom: 15px;
     margin-top: 0px;
+    height:100%;
   }
   
   .chatbot-messages {
@@ -149,102 +150,6 @@ body {
     border: none;
     border-radius: 5px;
     cursor: pointer;
-  }
-  
-  /* Calendar Styles */
-  .calendar-container h2 {
-    font-size: 1.3rem;
-    margin-bottom: 15px;
-  }
-  
-  .calendar-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-  }
-  
-  .calendar-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 8px;
-    margin-bottom: 20px;
-  }
-  
-  .calendar-cell {
-    height: 20px;
-    border: 1px solid #e5e7eb;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-  }
-  
-  .calendar-cell.header {
-    background-color: #f3f4f6;
-    font-weight: bold;
-  }
-  
-  .calendar-cell.empty {
-    background-color: #f8f9fa;
-    cursor: default;
-  }
-  
-  .calendar-cell.has-schedule {
-    position: relative;
-  }
-  
-  .schedule-indicator {
-    position: absolute;
-    bottom: 5px;
-    width: 6px;
-    height: 6px;
-    background-color: #3b82f6;
-    border-radius: 50%;
-  }
-  
-  .upcoming-schedules h3 {
-    font-size: 1.1rem;
-    margin-bottom: 10px;
-  }
-  
-  .schedule-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-  
-  .schedule-item {
-    padding: 10px;
-    border-bottom: 1px solid #e5e7eb;
-    cursor: pointer;
-  }
-  
-  .schedule-item:hover {
-    background-color: #f3f4f6;
-  }
-  
-  .schedule-date {
-    font-size: 0.85rem;
-    color: #6b7280;
-    margin-bottom: 5px;
-  }
-  
-  .schedule-title {
-    font-weight: bold;
-    margin-bottom: 5px;
-  }
-  
-  .participants {
-    display: flex;
-    gap: 5px;
-  }
-  
-  .participant {
-    background-color: #f3f4f6;
-    padding: 3px 8px;
-    border-radius: 10px;
-    font-size: 0.85rem;
   }
 
 /* 애니메이션 효과 */

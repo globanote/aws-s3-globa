@@ -12,298 +12,329 @@
     background: #fff;
     border-right: 1.5px solid #e5e7eb;
     min-width: 0;
+    padding: 0 1rem;
   }
   .manager-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 32px 40px 0 40px;
+    padding: 1.5rem 0;
     background: #fff;
   }
   .manager-header h2 {
     font-size: 1.4rem;
     font-weight: 700;
     color: #222;
+    margin: 0;
   }
   .view-selector {
     display: flex;
-    gap: 8px;
+    gap: 0.5rem;
   }
   .view-btn {
     background: #f3f6fd;
     color: #3b82f6;
     border: none;
-    border-radius: 6px 6px 0 0;
-    padding: 8px 22px;
-    font-size: 1rem;
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
     font-weight: 500;
     cursor: pointer;
-    transition: background 0.2s, color 0.2s;
+    transition: all 0.2s;
   }
   .view-btn.active {
     background: #3b82f6;
     color: #fff;
   }
-  .view-btn:not(.active):hover {
+  .view-btn:hover:not(.active) {
     background: #e0e7ff;
   }
   .calendar-container2 {
     flex: 1;
     display: flex;
-    align-items: stretch;
-    justify-content: center;
-    padding: 24px 0 0 0;
-    background: #fff;
-  }
-  .calendar-navigation {
-    display: flex;
-    align-items: center;
-    gap: 18px;
-    width: 100%;
-    justify-content: center;
-  }
-  .prev-btn, .next-btn {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    color: #3b82f6;
-    cursor: pointer;
-    padding: 6px 12px;
-    border-radius: 6px;
-    transition: background 0.2s;
-  }
-  .prev-btn:hover, .next-btn:hover {
-    background: #e0e7ff;
-  }
-  .month-view, .week-view, .day-view {
+    flex-direction: column;
+    padding: 1rem;
     background: #fff;
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(60, 80, 180, 0.06);
-    padding: 24px 32px;
-    min-width: 520px;
-    min-height: 480px;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+  .calendar-navigation {
+    display: none;
+  }
+  .prev-btn, .next-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #f1f5f9;
+    color: #475569;
+    border: none;
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 1;
+  }
+  .prev-btn {
+    left: 1rem;
+  }
+  .next-btn {
+    right: 1rem;
+  }
+  .month-view, .week-view, .day-view {
+    flex: 1;
+    min-height: 0;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
   }
   .month-header, .week-header, .day-header {
-    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    position: relative;
   }
   .month-header h3, .week-header h3, .day-header h3 {
     font-size: 1.1rem;
     font-weight: 600;
-    color: #222;
+    color: #1e293b;
+    margin: 0;
+    text-align: center;
+    flex: 1;
+    padding: 0;
   }
   .weekday-header {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 2px;
-    margin-bottom: 8px;
+    background: #f8fafc;
+    padding: 0.5rem;
+    border-bottom: 1px solid #e2e8f0;
   }
   .weekday {
     text-align: center;
-    color: #6b7280;
-    font-size: 0.98rem;
+    color: #64748b;
+    font-size: 0.85rem;
     font-weight: 500;
-    padding: 4px 0;
+    padding: 0.5rem 0;
   }
   .month-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 8px;
+    gap: 0.5rem;
+    padding: 1rem;
+    height: calc(100% - 120px);
   }
   .calendar-day {
-    background: #f9fafb;
-    border-radius: 8px;
-    min-height: 70px;
-    padding: 8px 6px 4px 6px;
-    cursor: pointer;
     position: relative;
-    transition: background 0.15s, box-shadow 0.15s;
-    box-shadow: 0 1px 2px rgba(60,80,180,0.03);
-  }
-  .calendar-day.current {
-    background: #e0e7ff;
-    border: 2px solid #3b82f6;
+    background: #f8fafc;
+    border-radius: 8px;
+    min-height: 80px;
+    padding: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
   }
   .calendar-day:hover {
-    background: #dbeafe;
+    background: #f1f5f9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+  .calendar-day.current {
+    background: #eff6ff;
+    border: 2px solid #3b82f6;
+  }
+  .calendar-day.empty {
+    background: #f8fafc;
+    border: 1px dashed #e2e8f0;
+    cursor: default;
   }
   .day-number {
-    font-size: 1.05rem;
+    font-size: 0.9rem;
     font-weight: 600;
-    color: #3b82f6;
-    margin-bottom: 4px;
+    color: #1e293b;
+    padding: 0.25rem;
   }
   .day-event {
-    background: #bfdbfe;
-    color: #222;
-    border-radius: 6px;
-    padding: 2px 8px;
-    font-size: 0.95rem;
-    margin-top: 4px;
-    margin-bottom: 2px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    background: #eff6ff;
+    color: #3b82f6;
+    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+    font-weight: 500;
     cursor: pointer;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    transition: background 0.15s;
+    transition: all 0.2s ease;
+    z-index: 2;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
   .day-event:hover {
     background: #3b82f6;
     color: #fff;
   }
   .time-slots {
-    position: relative;
-    margin-top: 12px;
-    min-height: 400px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    overflow-y: auto;
   }
   .time-slot {
     display: flex;
     align-items: center;
-    margin-bottom: 2px;
+    margin-bottom: 0.5rem;
   }
   .time-label {
     width: 60px;
-    color: #6b7280;
-    font-size: 0.95rem;
+    color: #64748b;
+    font-size: 0.85rem;
     text-align: right;
-    margin-right: 8px;
+    padding-right: 0.5rem;
   }
   .time-grid {
+    flex: 1;
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 2px;
-    flex: 1;
+    gap: 0.5rem;
   }
   .time-cell {
-    background: #f3f6fd;
+    position: relative;
+    background: #f8fafc;
     border-radius: 4px;
-    min-height: 28px;
+    min-height: 40px;
     cursor: pointer;
-    transition: background 0.15s;
+    transition: all 0.2s ease;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
   }
   .time-cell:hover {
-    background: #e0e7ff;
+    background: #f1f5f9;
   }
   .week-event {
     position: absolute;
-    z-index: 2;
-    border-radius: 6px;
-    color: #222;
-    font-size: 0.98rem;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     display: flex;
     align-items: center;
-    justify-content: flex-start;
-    padding: 4px 12px;
-    box-shadow: 0 2px 8px rgba(60,80,180,0.08);
+    justify-content: center;
+    background: #eff6ff;
+    color: #3b82f6;
+    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+    font-weight: 500;
     cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: all 0.2s ease;
+    z-index: 2;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
   .week-event:hover {
-    background: #3b82f6 !important;
+    background: #3b82f6;
     color: #fff;
   }
   .day-schedule {
-    position: relative;
-    margin-top: 12px;
-    min-height: 400px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    overflow-y: auto;
   }
   .hour-slot {
     display: flex;
     align-items: center;
-    margin-bottom: 2px;
+    margin-bottom: 0.5rem;
   }
   .hour-label {
     width: 60px;
-    color: #6b7280;
-    font-size: 0.95rem;
+    color: #64748b;
+    font-size: 0.85rem;
     text-align: right;
-    margin-right: 8px;
+    padding-right: 0.5rem;
   }
   .hour-content {
+    position: relative;
     flex: 1;
-    background: #f3f6fd;
+    background: #f8fafc;
     border-radius: 4px;
-    min-height: 28px;
-  }
-  .day-event {
-    position: absolute;
-    z-index: 2;
-    border-radius: 6px;
-    color: #222;
-    font-size: 0.98rem;
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    padding: 4px 12px;
-    box-shadow: 0 2px 8px rgba(60,80,180,0.08);
+    min-height: 60px;
     cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
   }
-  .day-event:hover {
-    background: #3b82f6 !important;
-    color: #fff;
+  .hour-content:hover {
+    background: #f1f5f9;
   }
   .manager-sidebar {
-    flex: 0.7;
+    width: 220px;
     background: #f9fafb;
-    padding: 40px 32px 0 32px;
-    display: flex;
-    flex-direction: column;
-    min-width: 320px;
+    padding: 1rem;
     border-left: 1.5px solid #e5e7eb;
-    position: relative;
   }
   .manager-sidebar h3 {
     font-size: 1.1rem;
     font-weight: 600;
-    color: #374151;
-    margin-bottom: 18px;
+    color: #222;
+    margin-bottom: 1rem;
   }
   .meeting-list {
-    flex: 1;
-    overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 0.75rem;
   }
   .meeting-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
     background: #fff;
     border-radius: 8px;
-    box-shadow: 0 1px 4px rgba(60,80,180,0.04);
-    padding: 14px 16px;
+    padding: 1rem;
     cursor: pointer;
-    transition: box-shadow 0.15s, background 0.15s;
-    border: 1.5px solid transparent;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    gap: 1rem;
   }
   .meeting-item:hover {
-    box-shadow: 0 4px 16px rgba(60,80,180,0.10);
-    border: 1.5px solid #3b82f6;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   }
   .meeting-color {
-    width: 10px;
-    height: 38px;
-    border-radius: 6px;
-    margin-top: 2px;
+    width: 4px;
+    border-radius: 2px;
   }
   .meeting-info {
     flex: 1;
   }
   .meeting-title {
-    font-size: 1.05rem;
+    font-size: 0.9rem;
     font-weight: 600;
     color: #222;
+    margin-bottom: 0.25rem;
   }
   .meeting-time {
-    font-size: 0.97rem;
+    font-size: 0.8rem;
     color: #6b7280;
-    margin: 2px 0 4px 0;
+    margin-bottom: 0.5rem;
   }
   .meeting-participants {
     display: flex;
-    gap: 4px;
+    gap: 0.5rem;
   }
   .participant-avatar {
     width: 24px;
@@ -314,91 +345,120 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.95rem;
-    font-weight: 600;
+    font-size: 0.8rem;
+    font-weight: 500;
   }
   /* 모달 스타일 */
   .modal-overlay {
     position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.18);
-    z-index: 1000;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.1);
     display: flex;
-    align-items: flex-start;
-    justify-content: flex-end;
-    padding: 40px 60px 0 0;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
   }
   .modal-detail {
     background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 4px 24px rgba(60,80,180,0.13);
-    padding: 32px 32px 24px 32px;
-    min-width: 320px;
-    max-width: 360px;
-    min-height: 180px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    position: relative;
+    border-radius: 8px;
+    padding: 1.5rem;
+    width: 400px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
   .modal-detail h4 {
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: #3b82f6;
-    margin-bottom: 4px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #222;
+    margin-bottom: 1rem;
   }
   .modal-time {
-    font-size: 1rem;
+    font-size: 0.9rem;
     color: #6b7280;
+    margin-bottom: 0.5rem;
   }
   .modal-desc {
-    font-size: 1rem;
+    font-size: 0.9rem;
     color: #222;
-    margin-bottom: 6px;
+    margin-bottom: 1rem;
   }
   .modal-participants {
     display: flex;
-    gap: 6px;
+    gap: 0.5rem;
     flex-wrap: wrap;
+    margin-bottom: 1rem;
   }
   .modal-participant {
     background: #e0e7ff;
     color: #3b82f6;
-    border-radius: 12px;
-    padding: 2px 10px;
-    font-size: 0.95rem;
-    font-weight: 500;
+    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
   }
   .modal-input {
     width: 100%;
-    padding: 8px 10px;
-    border: 1.5px solid #e0e7ff;
-    border-radius: 6px;
-    font-size: 1rem;
-    margin-bottom: 6px;
+    padding: 0.5rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
   }
   .modal-close-btn, .modal-save-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .modal-close-btn {
+    background: #f3f6fd;
+    color: #3b82f6;
+    border: none;
+    margin-right: 0.5rem;
+  }
+  .modal-save-btn {
     background: #3b82f6;
     color: #fff;
     border: none;
-    border-radius: 6px;
-    padding: 8px 18px;
-    font-size: 1rem;
-    font-weight: 500;
-    cursor: pointer;
-    margin-right: 8px;
-    margin-top: 8px;
-    transition: background 0.2s;
   }
-  .modal-close-btn:hover, .modal-save-btn:hover {
+  .modal-close-btn:hover {
+    background: #e0e7ff;
+  }
+  .modal-save-btn:hover {
     background: #2563eb;
   }
   @media (max-width: 1200px) {
-    .manager-main { padding: 0; }
-    .manager-header { padding: 18px 8px 0 8px; }
-    .calendar-container2 { padding: 8px 0 0 0; }
-    .manager-sidebar { padding: 18px 8px 0 8px; min-width: 180px; }
-    .modal-detail { min-width: 220px; max-width: 90vw; }
+    .manager-main {
+      padding: 0 0.5rem;
+    }
+    
+    .kpi-dashboard {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .manager-sidebar {
+      width: 160px;
+      padding: 0.5rem;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .meeting-manager2col {
+      flex-direction: column;
+    }
+    
+    .manager-sidebar {
+      width: 100%;
+      border-left: none;
+      border-top: 1.5px solid #e5e7eb;
+    }
+    
+    .kpi-dashboard {
+      grid-template-columns: 1fr;
+    }
   }
   
   /* RealtimeNote 개선 */
@@ -911,4 +971,61 @@
   }
   .logout-button svg {
     font-size: 16px;
+  }
+
+  /* KPI Dashboard Styles */
+  .kpi-dashboard {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    padding: 1rem 0;
+    margin-top: 1rem;
+  }
+
+  .kpi-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .kpi-title {
+    font-size: 0.9rem;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+  }
+
+  .kpi-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #222;
+  }
+
+  /* Ensure events are visible */
+  .calendar-day:hover .day-event,
+  .time-cell:hover .week-event,
+  .hour-content:hover .day-event {
+    z-index: 3;
+  }
+
+  .header-nav-btn {
+    background: #f1f5f9;
+    color: #475569;
+    border: none;
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .header-nav-btn:hover {
+    background: #e2e8f0;
+    color: #1e293b;
   }
