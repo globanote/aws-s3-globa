@@ -1,3 +1,10 @@
+/* 전체 배경 및 폰트 개선 */
+body {
+  background: linear-gradient(120deg, #f8fafc 0%, #e0e7ff 100%);
+  font-family: 'Pretendard', 'Noto Sans KR', Arial, sans-serif;
+  color: #222;
+}
+
   /* Dashboard Styles */
   .dashboard-container {
     height: 100%;
@@ -240,88 +247,7 @@
     font-size: 0.85rem;
   }
 
-
-/* 1. 전체 배경 및 폰트 개선 */
-body {
-  background: linear-gradient(120deg, #f8fafc 0%, #e0e7ff 100%);
-  font-family: 'Pretendard', 'Noto Sans KR', Arial, sans-serif;
-  color: #222;
-}
-
-/* 2. 버튼 스타일 통일 및 hover 효과 */
-button,
-.global-note-btn,
-.submit-btn,
-.edit-btn,
-.join-btn,
-.record-btn,
-.save-btn {
-  background: linear-gradient(90deg, #3b82f6 0%, #6366f1 100%);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 12px 20px;
-  font-weight: 600;
-  transition: box-shadow 0.2s, background 0.2s;
-  box-shadow: 0 2px 8px rgba(60, 80, 180, 0.08);
-  cursor: pointer;
-}
-
-button:hover,
-.global-note-btn:hover,
-.submit-btn:hover {
-  background: linear-gradient(90deg, #2563eb 0%, #7c3aed 100%);
-  box-shadow: 0 4px 16px rgba(60, 80, 180, 0.12);
-}
-
-/* 4. 입력창 스타일 */
-input, select, textarea {
-  border: 1.5px solid #e0e7ff;
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-size: 1rem;
-  background: #f9fafb;
-  transition: border 0.2s;
-}
-
-input:focus, select:focus, textarea:focus {
-  border: 1.5px solid #6366f1;
-  outline: none;
-  background: #fff;
-}
-
-/* 5. 사이드바 개선 */
-.sidebar {
-  background: linear-gradient(120deg, #fff 60%, #e0e7ff 100%);
-  border-right: 2px solid #e0e7ff;
-}
-
-.sidebar-item.active {
-  background: #6366f1;
-  color: #fff;
-}
-
-.sidebar-item:hover {
-  background: #e0e7ff;
-  color: #3b82f6;
-}
-
-/* 6. 반응형 개선 */
-@media (max-width: 900px) {
-  .dashboard-top-section,
-  .reservation-container {
-    flex-direction: column;
-  }
-  .sidebar {
-    width: 100px;
-    padding: 10px 0;
-  }
-  .content-container {
-    padding: 10px;
-  }
-}
-
-/* 7. 애니메이션 효과 */
+/* 애니메이션 효과 */
 button, .calendar-cell, .sidebar-item {
   transition: background 0.2s, color 0.2s, box-shadow 0.2s;
 }
