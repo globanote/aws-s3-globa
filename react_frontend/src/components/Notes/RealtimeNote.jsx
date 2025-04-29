@@ -1,6 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import MicRecorder from 'mic-recorder-to-mp3';
 import '../../styles/notes.css';
+
+const Mp3Recorder = new MicRecorder({ bitRate: 128 });
 
 function RealtimeNote() {
   const navigate = useNavigate();
@@ -14,8 +17,96 @@ function RealtimeNote() {
   ]);
   const [input, setInput] = useState('');
 
+  // mp3 녹음 결과 blob 저장
+  const audioBlobRef = useRef(null);
+
+  // 녹음 시작
+  const startRecording = async () => {
+    try {
+      await Mp3Recorder.start();
+      setIsRecording(true);
+    } catch (err) {
+      alert('마이크 접근 권한이 필요합니다.');
+      setIsRecording(false);
+    }
+  };
+
+  // 녹음 중지
+  const stopRecording = async () => {
+    try {
+      const [, blob] = await Mp3Recorder.stop().getMp3(); // buffer 미사용, eslint 경고 해결
+      audioBlobRef.current = blob;
+      setIsRecording(false);
+      
+      // 녹음이 완료되면 로컬에 파일 저장
+      const audioUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = audioUrl;
+      link.download = `recording_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.mp3`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(audioUrl);
+    } catch (err) {
+      alert('녹음 중 오류가 발생했습니다.');
+      setIsRecording(false);
+    }
+  };
+
+  // 녹음 버튼 토글
+  const toggleRecording = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  };
+
+  // Blob을 base64로 변환
+  const blobToBase64 = (blob) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  // 저장하기 버튼 클릭 시 Lambda 호출
+  const handleSave = async () => {
+    if (!audioBlobRef.current) {
+      alert('녹음된 오디오가 없습니다.');
+      return;
+    }
+    try {
+      console.log('test1');
+      const audioBase64 = await blobToBase64(audioBlobRef.current);
+      console.log('test2');
+      const response = await fetch('https://4u8cc1twf2.execute-api.ap-northeast-2.amazonaws.com/prod/record-audio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          audio_data: audioBase64,
+          file_format: 'mp3',
+        }),
+      });
+      console.log('test3');
+      const result = await response.json();
+      
+      console.log(result)
+      if (result.success) {
+        alert('저장 및 S3 업로드 성공!');
+        navigate('/ai-meeting-note');
+      } else {
+        alert('오류: ' + (result.error || '저장 실패'));
+      }
+    } catch (err) {
+      alert('저장 중 오류 발생: ' + err.message);
+    }
+  };
+
   // AWS Transcribe API 연동 예시 (더미)
-  useEffect(() => {
+  React.useEffect(() => {
     if (isRecording) {
       const interval = setInterval(() => {
         setNotes(prev => ([...prev, { time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), content: 'AWS Transcribe에서 받아온 새로운 노트입니다.' }]));
@@ -41,9 +132,6 @@ function RealtimeNote() {
       }]));
     }, 1000);
   };
-
-  const toggleRecording = () => setIsRecording(!isRecording);
-  const handleSave = () => navigate('/ai-meeting-note');
 
   // 미팅 정보/진행상황 더미
   const meetingInfo = {
@@ -108,14 +196,16 @@ function RealtimeNote() {
       </main>
       {/* 하단: 녹음바 */}
       <footer className="realtime-footer">
-        <button 
-          className={`record-btn ${isRecording ? 'recording' : ''}`} 
-          onClick={toggleRecording}
-        >
-          <span className="record-dot"></span>
-          {isRecording ? '녹음 중지' : '녹음 시작'}
-        </button>
-        <button className="save-btn" onClick={handleSave}>저장하기</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            className={`record-btn ${isRecording ? 'recording' : ''}`}
+            onClick={toggleRecording}
+          >
+            <span className="record-dot"></span>
+            {isRecording ? '녹음 중지' : '녹음 시작'}
+          </button>
+          <button className="save-btn" onClick={handleSave}>저장하기</button>
+        </div>
       </footer>
     </div>
   );
