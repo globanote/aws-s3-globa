@@ -10,7 +10,7 @@ const cognitoAuthConfig = {
   client_id: process.env.REACT_APP_OIDC_CLIENT_ID,
   redirect_uri: process.env.REACT_APP_OIDC_REDIRECT_URI,
   response_type: "code",
-  scope: "email openid",
+  scope: "email openid profile",
   onSigninCallback: () => {
     window.history.replaceState(
       {},

@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from 'react-oidc-context'; // Cognito 사용자 정보 사용을 위해 추가
 import '../../styles/notes.css';
 
 function GlobalNoteCreate() {
   const navigate = useNavigate();
+  const auth = useAuth(); // auth 추가
+  
   const [mode, setMode] = useState(null); // 'create' | 'upload' | null
   const [title, setTitle] = useState('');
   const [purpose, setPurpose] = useState('');
@@ -13,33 +16,58 @@ function GlobalNoteCreate() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState('');
 
+  // 사용자 정보 가져오기
+  const getUserId = () => {
+    if (auth.isAuthenticated && auth.user) {
+      return auth.user.profile.sub || 'guest-user';
+    }
+    return 'guest-user';
+  };
+
   // 새노트 생성
   const handleCreate = () => {
     // 실제로는 서버에 저장 후 이동
     navigate('/realtime-note');
   };
 
-  // Presigned URL 요청
+  // Presigned URL 요청 - 수정됨
   const getPresignedUrl = async (file) => {
     try {
+      const userId = getUserId();
+      // 파일 확장자 가져오기
+      const fileExtension = file.name.split('.').pop();
+      // 고유한 파일명 생성 (타임스탬프 + 랜덤 문자열)
+      const uniqueFilename = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExtension}`;
+      
+      // API 요청 데이터
+      const requestData = {
+        bucket: "globa-audio-bucket",
+        key: uniqueFilename,
+        content_type: file.type,
+        user_id: userId
+      };
+      
+      console.log('Sending presigned URL request with data:', requestData);
+      
+      // mode: 'cors' 명시적 지정 및 기타 헤더 추가
       const response = await fetch('https://8gszri48w4.execute-api.ap-northeast-2.amazonaws.com/prod/presign', {
         method: 'POST',
+        mode: 'cors', // CORS 모드 명시적 설정
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
-        body: JSON.stringify({
-          bucket: 'globa-audio-bucket',
-          key: `/test-user-123/recordings/${Date.now()}-${file.name}`,
-          content_type: file.type,
-          user_id: 'test-user-123' // 실제 구현시 사용자 ID를 동적으로 설정
-        }),
+        body: JSON.stringify(requestData),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to get presigned URL');
+        const errorText = await response.text();
+        console.error('Server response:', errorText);
+        throw new Error(`Server returned ${response.status}: ${errorText}`);
       }
 
       const data = await response.json();
+      console.log('Presigned URL response:', data);
       return data.url;
     } catch (error) {
       console.error('Error getting presigned URL:', error);
@@ -47,47 +75,108 @@ function GlobalNoteCreate() {
     }
   };
 
-  // S3에 파일 업로드
+  // 테스트용 직접 업로드 함수
+  const directFileUpload = async () => {
+    if (!file) return;
+    
+    try {
+      setUploadStatus('uploading');
+      setUploadProgress(10); // 초기 진행 상태 표시
+      
+      // FormData 사용하여 파일 직접 업로드
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('user_id', getUserId());
+      
+      // 프록시 서버나 직접 업로드 엔드포인트가 있다면 사용
+      const uploadResponse = await fetch('/api/upload-audio', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!uploadResponse.ok) {
+        throw new Error('File upload failed');
+      }
+      
+      setUploadStatus('success');
+      setUploadProgress(100);
+      
+      return true;
+    } catch (error) {
+      console.error('Direct upload failed:', error);
+      setUploadStatus('error');
+      setErrorMessage(error.message || '업로드 중 오류가 발생했습니다');
+      return false;
+    }
+  };
+
+  // S3에 파일 업로드 - 수정됨
   const uploadToS3 = async (presignedUrl, file) => {
     try {
-      const response = await fetch(presignedUrl, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': file.type,
-        },
-        body: file,
+      console.log('Uploading file to:', presignedUrl);
+      
+      // 파일 업로드 진행 상황 모니터링을 위한 XMLHttpRequest 사용
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        
+        xhr.upload.addEventListener('progress', (event) => {
+          if (event.lengthComputable) {
+            const percentComplete = Math.round((event.loaded / event.total) * 100);
+            setUploadProgress(percentComplete);
+            console.log(`Upload progress: ${percentComplete}%`);
+          }
+        });
+        
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            console.log('Upload successful');
+            resolve(xhr.response);
+          } else {
+            console.error('Upload failed with status:', xhr.status);
+            reject(new Error(`Upload failed with status ${xhr.status}`));
+          }
+        });
+        
+        xhr.addEventListener('error', (e) => {
+          console.error('XHR error event:', e);
+          reject(new Error('Upload failed due to network error'));
+        });
+        
+        xhr.open('PUT', presignedUrl);
+        xhr.setRequestHeader('Content-Type', file.type);
+        xhr.send(file);
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to upload file');
-      }
-
-      return response;
     } catch (error) {
-      console.error('Error uploading to S3:', error);
+      console.error('Error in uploadToS3:', error);
       throw error;
     }
   };
 
-  // 파일 업로드 처리
+  // 파일 업로드 처리 - 수정됨
   const handleUpload = async () => {
     if (!file) return;
 
     try {
       setUploadStatus('uploading');
       setUploadProgress(0);
+      console.log('Starting upload process for file:', file.name);
 
       // Presigned URL 요청
+      console.log('Requesting presigned URL...');
       const presignedUrl = await getPresignedUrl(file);
+      console.log('Received presigned URL:', presignedUrl);
       
       // 파일 업로드
+      console.log('Starting S3 upload...');
       await uploadToS3(presignedUrl, file);
       
       setUploadStatus('success');
       setUploadProgress(100);
+      console.log('Upload completed successfully');
     } catch (error) {
+      console.error('Upload process failed:', error);
       setUploadStatus('error');
-      setErrorMessage(error.message);
+      setErrorMessage(error.message || '업로드 중 오류가 발생했습니다.');
     }
   };
 

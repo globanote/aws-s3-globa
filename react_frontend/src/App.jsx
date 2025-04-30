@@ -20,8 +20,21 @@ function App() {
   // Cognito 사용자 정보를 사용
   const getUserInfo = () => {
     if (auth.isAuthenticated && auth.user) {
+      // 디버깅용 콘솔 로그 추가
+      console.log('Auth User Profile:', auth.user.profile);
+      
+      // 닉네임을 찾기 위한 여러 필드 확인
+      const displayName = 
+        auth.user.profile.nickname || 
+        auth.user.profile.name ||
+        auth.user.profile.given_name ||
+        auth.user.profile.preferred_username ||
+        auth.user.profile.email?.split('@')[0] || // 이메일에서 사용자명 추출
+        auth.user.profile.email || 
+        'User';
+      
       return {
-        name: auth.user.profile.name || auth.user.profile.email || 'User',
+        name: displayName,
         email: auth.user.profile.email || 'example@email.com',
         profileImage: '/profile.jpg',
         usage: {
@@ -43,9 +56,13 @@ function App() {
     };
   };
   
-  // 로그아웃 핸들러
+  // 단순화된 로그아웃 함수
   const handleLogout = () => {
+    // 로컬 사용자 정보만 제거
     auth.removeUser();
+    
+    // 성공적인 로그아웃 후 홈페이지로 리다이렉트
+    window.location.href = '/';
   };
 
   // 로딩 중일 때
