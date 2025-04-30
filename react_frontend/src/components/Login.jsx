@@ -9,12 +9,13 @@ function Login() {
   
   // 로그아웃 리다이렉트 함수
   const signOutRedirect = () => {
-    const clientId = "dfjbvb8sjealspdl43k3rcm5i";
-    // 로컬 개발 환경에 맞게 로그아웃 URL 설정
-    const logoutUri = "http://localhost:3000";
-    const cognitoDomain = "https://ap-northeast-2q4k5dfkvu.auth.ap-northeast-2.amazoncognito.com";
+    const clientId = process.env.REACT_APP_COGNITO_CLIENT_ID;
+    const logoutUri = process.env.REACT_APP_COGNITO_LOGOUT_URI;
+    const cognitoDomain = process.env.REACT_APP_COGNITO_DOMAIN;
+  
     window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}`;
   };
+  
 
   // auth가 undefined인 경우 로딩 화면 표시
   if (!auth) {

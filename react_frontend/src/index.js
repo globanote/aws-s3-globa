@@ -6,9 +6,9 @@ import reportWebVitals from './reportWebVitals';
 import {AuthProvider} from "react-oidc-context"; // oidc 인증 제공자
 
 const cognitoAuthConfig = {
-  authority: "https://cognito-idp.ap-northeast-2.amazonaws.com/ap-northeast-2_q4k5dfKvU",
-  client_id: "dfjbvb8sjealspdl43k3rcm5i",
-  redirect_uri: "http://localhost:3000/auth-callback",
+  authority: process.env.REACT_APP_OIDC_AUTHORITY,
+  client_id: process.env.REACT_APP_OIDC_CLIENT_ID,
+  redirect_uri: process.env.REACT_APP_OIDC_REDIRECT_URI,
   response_type: "code",
   scope: "email openid",
   onSigninCallback: () => {
