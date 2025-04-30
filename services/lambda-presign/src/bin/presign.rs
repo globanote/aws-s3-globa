@@ -30,6 +30,22 @@ async fn handler(event: LambdaEvent<Value>) -> Result<Value, Error> {
     let (event, _context) = event.into_parts();
     info!("받은 이벤트: {}", json!(event));
     
+    // OPTIONS 메서드 처리 (CORS preflight)
+    if let Some(method) = event.get("httpMethod").and_then(|m| m.as_str()) {
+        if method == "OPTIONS" {
+            return Ok(json!({
+                "statusCode": 200,
+                "headers": {
+                    "Access-Control-Allow-Origin": "http://localhost:3000",
+                    "Access-Control-Allow-Headers": "Content-Type,Authorization",
+                    "Access-Control-Allow-Methods": "OPTIONS,POST",
+                    "Access-Control-Max-Age": "300"
+                },
+                "body": ""
+            }));
+        }
+    }
+    
     // API Gateway 이벤트에서 본문 추출
     let body = if let Some(body) = event.get("body") {
         if let Some(body_str) = body.as_str() {
@@ -37,12 +53,22 @@ async fn handler(event: LambdaEvent<Value>) -> Result<Value, Error> {
         } else {
             return Ok(json!({
                 "statusCode": 400,
+                "headers": {
+                    "Access-Control-Allow-Origin": "http://localhost:3000",
+                    "Access-Control-Allow-Headers": "Content-Type,Authorization",
+                    "Access-Control-Allow-Methods": "OPTIONS,POST"
+                },
                 "body": "요청 본문이 문자열이 아닙니다"
             }));
         }
     } else {
         return Ok(json!({
             "statusCode": 400,
+            "headers": {
+                "Access-Control-Allow-Origin": "http://localhost:3000",
+                "Access-Control-Allow-Headers": "Content-Type,Authorization",
+                "Access-Control-Allow-Methods": "OPTIONS,POST"
+            },
             "body": "요청 본문이 없습니다"
         }));
     };
@@ -54,6 +80,11 @@ async fn handler(event: LambdaEvent<Value>) -> Result<Value, Error> {
             error!("JSON 파싱 오류: {:?}", e);
             return Ok(json!({
                 "statusCode": 400,
+                "headers": {
+                    "Access-Control-Allow-Origin": "http://localhost:3000",
+                    "Access-Control-Allow-Headers": "Content-Type,Authorization",
+                    "Access-Control-Allow-Methods": "OPTIONS,POST"
+                },
                 "body": format!("잘못된 JSON 형식: {}", e)
             }));
         }
@@ -71,6 +102,11 @@ async fn handler(event: LambdaEvent<Value>) -> Result<Value, Error> {
                 error!("PresigningConfig 생성 오류: {:?}", e);
                 return Ok(json!({
                     "statusCode": 500,
+                    "headers": {
+                        "Access-Control-Allow-Origin": "http://localhost:3000",
+                        "Access-Control-Allow-Headers": "Content-Type,Authorization",
+                        "Access-Control-Allow-Methods": "OPTIONS,POST"
+                    },
                     "body": "서버 내부 오류"
                 }));
             }
@@ -88,6 +124,11 @@ async fn handler(event: LambdaEvent<Value>) -> Result<Value, Error> {
                 error!("Presign 실패: {:?}", e);
                 return Ok(json!({
                     "statusCode": 500,
+                    "headers": {
+                        "Access-Control-Allow-Origin": "http://localhost:3000",
+                        "Access-Control-Allow-Headers": "Content-Type,Authorization",
+                        "Access-Control-Allow-Methods": "OPTIONS,POST"
+                    },
                     "body": format!("Presign URL 생성 실패: {}", e)
                 }));
             }
@@ -98,7 +139,10 @@ async fn handler(event: LambdaEvent<Value>) -> Result<Value, Error> {
     Ok(json!({
         "statusCode": 200,
         "headers": {
-            "content-type": "application/json"
+            "content-type": "application/json",
+            "Access-Control-Allow-Origin": "http://localhost:3000",
+            "Access-Control-Allow-Headers": "Content-Type,Authorization",
+            "Access-Control-Allow-Methods": "OPTIONS,POST"
         },
         "body": response.to_string()
     }))
