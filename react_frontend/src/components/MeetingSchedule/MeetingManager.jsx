@@ -1,256 +1,286 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react'; // 🟢 useRef 추가
 import { useParams, useNavigate } from 'react-router-dom';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin from '@fullcalendar/interaction';
 import '../../styles/meetingschedule.css';
 
 function MeetingManager() {
   const { view } = useParams();
   const navigate = useNavigate();
-  const [currentDate, setCurrentDate] = useState(new Date(2025, 4, 8)); // May 8, 2025
+  const calendarRef = useRef(null); // 🟢 FullCalendar 참조
+
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedMeeting, setSelectedMeeting] = useState(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const [createDate, setCreateDate] = useState(null);
+  const [calendarView, setCalendarView] = useState('dayGridMonth');
+  const [events, setEvents] = useState([
+    {
+      id: 1,
+      title: 'Project Update',
+      start: '2025-05-08T09:00:00',
+      end: '2025-05-08T10:00:00',
+      backgroundColor: '#bfdbfe',
+      borderColor: '#3b82f6',
+      extendedProps: {
+        participants: ['김유리', '박지연', '이민호'],
+        desc: '프로젝트 현황 공유 및 이슈 논의'
+      }
+    },
+    {
+      id: 2,
+      title: 'Team Sync',
+      start: '2025-05-08T11:00:00',
+      end: '2025-05-08T12:00:00',
+      backgroundColor: '#fed7aa',
+      borderColor: '#f97316',
+      extendedProps: {
+        participants: ['김유리', '박지연'],
+        desc: '팀 업무 동기화'
+      }
+    },
+    {
+      id: 3,
+      title: 'Client Meeting',
+      start: '2025-05-08T15:00:00',
+      end: '2025-05-08T16:30:00',
+      backgroundColor: '#fecaca',
+      borderColor: '#ef4444',
+      extendedProps: {
+        participants: ['김유리', '박지연', '이민호', '정수진'],
+        desc: '고객사 미팅 및 요구사항 정리'
+      }
+    }
+  ]);
 
-  // KPI 데이터
-  const kpiData = {
-    requested: 24,
-    approved: 18,
-    cancelled: 3,
-    pending: 3
-  };
-
-  const meetings = [
-    { id: 1, title: 'Project Update', time: '09:00 - 10:00', participants: ['김유리', '박지연', '이민호'], color: 'blue', date: '2025-05-08', desc: '프로젝트 현황 공유 및 이슈 논의' },
-    { id: 2, title: 'Team Sync', time: '11:00 - 12:00', participants: ['김유리', '박지연'], color: 'orange', date: '2025-05-08', desc: '팀 업무 동기화' },
-    { id: 3, title: 'Client Meeting', time: '15:00 - 16:30', participants: ['김유리', '박지연', '이민호', '정수진'], color: 'red', date: '2025-05-08', desc: '고객사 미팅 및 요구사항 정리' }
-  ];
-
+  // 🟢 FullCalendar 뷰 변경을 위한 함수 수정
   const changeView = (newView) => {
     navigate(`/meeting-manager/${newView}`);
-  };
 
-  // 월/주/일 이동 핸들러
-  const handlePrev = () => {
-    if (view === 'month') {
-      setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
-    } else if (view === 'week') {
-      setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 7));
-    } else if (view === 'day') {
-      setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 1));
+    const viewMap = {
+      month: 'dayGridMonth',
+      week: 'timeGridWeek',
+      day: 'timeGridDay'
+    };
+
+    const mappedView = viewMap[newView] || 'dayGridMonth';
+    setCalendarView(mappedView);
+
+    const calendarApi = calendarRef.current?.getApi();
+    if (calendarApi) {
+      calendarApi.changeView(mappedView);
     }
   };
-  const handleNext = () => {
-    if (view === 'month') {
-      setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
-    } else if (view === 'week') {
-      setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 7));
-    } else if (view === 'day') {
-      setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 1));
+
+  useEffect(() => {
+    if (view) {
+      changeView(view);
+    }
+  }, [view]);
+
+  const handleDateClick = (arg) => {
+    setCreateDate(arg.date);
+    setShowCreateDialog(true);
+  };
+
+  const handleEventClick = (arg) => {
+    const event = {
+      id: arg.event.id,
+      title: arg.event.title,
+      start: new Date(arg.event.start),
+      end: new Date(arg.event.end),
+      time: `${new Date(arg.event.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(arg.event.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+      participants: arg.event.extendedProps.participants,
+      desc: arg.event.extendedProps.desc,
+      backgroundColor: arg.event.backgroundColor,
+      borderColor: arg.event.borderColor
+    };
+    setSelectedMeeting(event);
+  };
+
+  const handleCreateMeeting = (meetingData) => {
+    const newEvent = {
+      id: Date.now(),
+      title: meetingData.title,
+      start: meetingData.start,
+      end: meetingData.end,
+      ...eventColors.default,
+      extendedProps: {
+        participants: meetingData.participants,
+        desc: meetingData.desc
+      }
+    };
+    setEvents(prevEvents => [...prevEvents, newEvent]);
+    setShowCreateDialog(false);
+  };
+
+  const handleEditMeeting = (meetingData) => {
+    const updatedEvents = events.map(event => 
+      event.id === meetingData.id ? {
+        ...event,
+        title: meetingData.title,
+        start: meetingData.start,
+        end: meetingData.end,
+        extendedProps: {
+          participants: meetingData.participants,
+          desc: meetingData.desc
+        }
+      } : event
+    );
+    setEvents(updatedEvents);
+    setSelectedMeeting(null);
+    setShowEditDialog(false);
+  };
+
+  const handleDeleteMeeting = (id) => {
+    if (window.confirm('정말로 이 일정을 삭제하시겠습니까?')) {
+      setEvents(events.filter(event => event.id !== id));
+      setSelectedMeeting(null);
     }
   };
 
   // 모달: 일정 상세
   const MeetingDetailModal = ({ meeting, onClose }) => (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-detail" onClick={e => e.stopPropagation()}>
-        <h4>{meeting.title}</h4>
-        <div className="modal-time">{meeting.time}</div>
-        <div className="modal-desc">{meeting.desc}</div>
-        <div className="modal-participants">
-          {meeting.participants.map((p, i) => (
-            <span key={i} className="modal-participant">{p}</span>
-          ))}
+      <div className="modal-detail modern-modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h4 className="modal-title">{meeting.title}</h4>
+          <button className="modal-close-icon" onClick={onClose}>×</button>
         </div>
-        <button className="modal-close-btn" onClick={onClose}>닫기</button>
+        <div className="modal-content">
+          <div className="modal-info-group">
+            <div className="modal-info-label">시간</div>
+            <div className="modal-info-value">{meeting.time}</div>
+          </div>
+          <div className="modal-info-group">
+            <div className="modal-info-label">설명</div>
+            <div className="modal-info-value modal-desc">{meeting.desc}</div>
+          </div>
+          <div className="modal-info-group">
+            <div className="modal-info-label">참석자</div>
+            <div className="modal-participants">
+              {meeting.participants.map((p, i) => (
+                <span key={i} className="modal-participant">{p}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="modal-actions">
+          <button className="modal-edit-btn modern-button" onClick={() => {
+            setShowEditDialog(true);
+            onClose();
+          }}>수정하기</button>
+          <button className="modal-delete-btn modern-button-secondary" onClick={() => handleDeleteMeeting(meeting.id)}>삭제</button>
+        </div>
       </div>
     </div>
   );
 
-  // 모달: 일정 생성
-  const MeetingCreateModal = ({ date, onClose }) => (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-detail" onClick={e => e.stopPropagation()}>
-        <h4>일정 생성</h4>
-        <div className="modal-time">{date ? `${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()}` : ''}</div>
-        <input className="modal-input" placeholder="제목" />
-        <input className="modal-input" placeholder="시간" />
-        <textarea className="modal-input" placeholder="설명" />
-        <button className="modal-close-btn" onClick={onClose}>닫기</button>
-        <button className="modal-save-btn">저장</button>
-      </div>
-    </div>
-  );
-
-  // 캘린더 셀 클릭 핸들러
-  const handleCellClick = (date) => {
-    setCreateDate(date);
-    setShowCreateDialog(true);
-  };
-
-  // 일정 클릭 핸들러
-  const handleMeetingClick = (meeting) => {
-    setSelectedMeeting(meeting);
-  };
-
-  // 월별 캘린더 그리드 생성
-  const getMonthGrid = () => {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const grid = [];
-    let dayNum = 1;
-    for (let i = 0; i < 6; i++) { // 6주
-      for (let j = 0; j < 7; j++) {
-        if ((i === 0 && j < firstDay) || dayNum > daysInMonth) {
-          grid.push(null);
-        } else {
-          grid.push(new Date(year, month, dayNum));
-          dayNum++;
-        }
+  // 모달: 일정 생성/수정
+  const MeetingFormModal = ({ date, meeting, onSubmit, onClose, isEdit }) => {
+    const [formData, setFormData] = useState(
+      meeting ? {
+        id: meeting.id,
+        title: meeting.title,
+        start: new Date(meeting.start),
+        end: new Date(meeting.end),
+        participants: meeting.participants.join(', '),
+        desc: meeting.desc
+      } : {
+        title: '',
+        start: date ? new Date(date) : new Date(),
+        end: date ? new Date(new Date(date).getTime() + 60 * 60 * 1000) : new Date(new Date().getTime() + 60 * 60 * 1000),
+        participants: '',
+        desc: ''
       }
-    }
-    return grid;
-  };
+    );
 
-  // 주간 캘린더 날짜 배열 생성
-  const getWeekDates = () => {
-    const start = new Date(currentDate);
-    start.setDate(currentDate.getDate() - start.getDay()); // 일요일
-    return Array.from({length: 7}, (_, i) => new Date(start.getFullYear(), start.getMonth(), start.getDate() + i));
-  };
+    const handleSubmit = (e) => {
+      e.preventDefault();
+      onSubmit({
+        ...formData,
+        id: meeting ? meeting.id : Date.now(),
+        participants: formData.participants.split(',').map(p => p.trim()).filter(p => p)
+      });
+    };
 
-  // 일별 캘린더 시간대 배열
-  const getDayHours = () => Array.from({length: 12}, (_, i) => i + 8);
-
-  // 캘린더 뷰 렌더링 (월/주/일)
-  const renderCalendarView = () => {
-    if (view === 'month') {
-      const grid = getMonthGrid();
-      return (
-        <div className="month-view">
-          <div className="month-header">
-            <button className="header-nav-btn" onClick={handlePrev}>←</button>
-            <h3>{currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월</h3>
-            <button className="header-nav-btn" onClick={handleNext}>→</button>
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-detail modern-modal" onClick={e => e.stopPropagation()}>
+          <div className="modal-header">
+            <h4 className="modal-title">{isEdit ? '일정 수정' : '새 일정 만들기'}</h4>
+            <button className="modal-close-icon" onClick={onClose}>×</button>
           </div>
-          <div className="weekday-header">
-            {['SUN','MON','TUE','WED','THU','FRI','SAT'].map((d, i) => <div key={i} className="weekday">{d}</div>)}
-          </div>
-          <div className="month-grid">
-            {grid.map((date, idx) => date ? (
-              <div
-                key={idx}
-                className={`calendar-day${date.toDateString() === new Date().toDateString() ? ' current' : ''}`}
-                onClick={() => handleCellClick(date)}
-              >
-                <div className="day-number">{date.getDate()}</div>
-                {meetings.filter(m => m.date === `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`).map((m, i) => (
-                  <div
-                    key={i}
-                    className="day-event"
-                    style={{backgroundColor: m.color === 'blue' ? '#bfdbfe' : m.color === 'orange' ? '#fed7aa' : '#fecaca'}}
-                    onClick={e => { e.stopPropagation(); handleMeetingClick(m); }}
-                  >
-                    {m.title}
-                  </div>
-                ))}
+          <form onSubmit={handleSubmit} className="modal-form">
+            <div className="form-group">
+              <label>제목</label>
+              <input
+                className="modern-input"
+                placeholder="일정 제목을 입력하세요"
+                value={formData.title}
+                onChange={e => setFormData({...formData, title: e.target.value})}
+                required
+              />
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>시작 시간</label>
+                <input
+                  className="modern-input"
+                  type="datetime-local"
+                  value={formData.start.toISOString().slice(0, 16)}
+                  onChange={e => setFormData({...formData, start: new Date(e.target.value)})}
+                  required
+                />
               </div>
-            ) : <div key={idx} className="calendar-day empty"></div>)}
-          </div>
-        </div>
-      );
-    }
-    if (view === 'week') {
-      const weekDates = getWeekDates();
-      return (
-        <div className="week-view">
-          <div className="week-header">
-            <button className="header-nav-btn" onClick={handlePrev}>←</button>
-            <h3>{weekDates[0].toLocaleDateString()} - {weekDates[6].toLocaleDateString()}</h3>
-            <button className="header-nav-btn" onClick={handleNext}>→</button>
-          </div>
-          <div className="weekday-header">
-            {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map((d, i) => <div key={i} className="weekday">{d}</div>)}
-          </div>
-          <div className="time-slots">
-            {getDayHours().map(hour => (
-              <div key={hour} className="time-slot">
-                <div className="time-label">{hour}:00</div>
-                <div className="time-grid">
-                  {weekDates.map((date, j) => {
-                    // 해당 셀의 날짜와 시간에 해당하는 미팅 찾기
-                    const cellDateStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
-                    const cellMeetings = meetings.filter(m => {
-                      if (m.date !== cellDateStr) return false;
-                      // 시간대 매칭 (간단히 시작 시간이 hour와 같은지 체크)
-                      const startHour = parseInt(m.time.split(':')[0], 10);
-                      return startHour === hour;
-                    });
-                    return (
-                      <div key={j} className="time-cell" onClick={() => handleCellClick(date)}>
-                        {cellMeetings.map((m, idx) => (
-                          <div
-                            key={idx}
-                            className="week-event"
-                            style={{backgroundColor: m.color === 'blue' ? '#bfdbfe' : m.color === 'orange' ? '#fed7aa' : '#fecaca'}}
-                            onClick={e => { e.stopPropagation(); handleMeetingClick(m); }}
-                          >
-                            {m.title}
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })}
-                </div>
+              <div className="form-group">
+                <label>종료 시간</label>
+                <input
+                  className="modern-input"
+                  type="datetime-local"
+                  value={formData.end.toISOString().slice(0, 16)}
+                  onChange={e => setFormData({...formData, end: new Date(e.target.value)})}
+                  required
+                />
               </div>
-            ))}
-          </div>
+            </div>
+            <div className="form-group">
+              <label>참석자</label>
+              <input
+                className="modern-input"
+                placeholder="참석자 이름을 쉼표로 구분하여 입력하세요"
+                value={formData.participants}
+                onChange={e => setFormData({...formData, participants: e.target.value})}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label>설명</label>
+              <textarea
+                className="modern-textarea"
+                placeholder="일정에 대한 설명을 입력하세요"
+                value={formData.desc}
+                onChange={e => setFormData({...formData, desc: e.target.value})}
+                required
+              />
+            </div>
+            <div className="modal-actions">
+              <button type="submit" className="modern-button">
+                {isEdit ? '수정하기' : '만들기'}
+              </button>
+              <button type="button" className="modern-button-secondary" onClick={onClose}>
+                취소
+              </button>
+            </div>
+          </form>
         </div>
-      );
-    }
-    if (view === 'day') {
-      const todayStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth()+1).padStart(2,'0')}-${String(currentDate.getDate()).padStart(2,'0')}`;
-      return (
-        <div className="day-view">
-          <div className="day-header">
-            <button className="header-nav-btn" onClick={handlePrev}>←</button>
-            <h3>{currentDate.toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric'})}</h3>
-            <button className="header-nav-btn" onClick={handleNext}>→</button>
-          </div>
-          <div className="day-schedule">
-            {getDayHours().map(hour => {
-              // 해당 시간대의 미팅 찾기
-              const cellMeetings = meetings.filter(m => {
-                if (m.date !== todayStr) return false;
-                const startHour = parseInt(m.time.split(':')[0], 10);
-                return startHour === hour;
-              });
-              return (
-                <div key={hour} className="hour-slot" onClick={() => handleCellClick(currentDate)}>
-                  <div className="hour-label">{hour}:00</div>
-                  <div className="hour-content">
-                    {cellMeetings.map((m, idx) => (
-                      <div
-                        key={idx}
-                        className="day-event"
-                        style={{backgroundColor: m.color === 'blue' ? '#bfdbfe' : m.color === 'orange' ? '#fed7aa' : '#fecaca'}}
-                        onClick={e => { e.stopPropagation(); handleMeetingClick(m); }}
-                      >
-                        {m.title}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      );
-    }
-    return <div>Invalid view</div>;
+      </div>
+    );
   };
 
-  // KPI 카드 컴포넌트
   const KPICard = ({ title, value, color }) => (
     <div className="kpi-card" style={{ borderLeft: `4px solid ${color}` }}>
       <div className="kpi-title">{title}</div>
@@ -258,74 +288,144 @@ function MeetingManager() {
     </div>
   );
 
-  return (
-    <div>
-    <div className="kpi-dashboard">
-          <KPICard title="요청된 미팅" value={kpiData.requested} color="#3b82f6" />
-          <KPICard title="승인된 미팅" value={kpiData.approved} color="#10b981" />
-          <KPICard title="취소된 미팅" value={kpiData.cancelled} color="#ef4444" />
-          <KPICard title="대기중인 미팅" value={kpiData.pending} color="#f59e0b" />
-    </div>
-    <div className="meeting-manager2col">
+  const upcomingEvents = events.filter(event => {
+    const eventDate = new Date(event.start);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return eventDate >= today;
+  }).sort((a, b) => new Date(a.start) - new Date(b.start));
 
-      <div className="manager-main">
-        <div className="manager-header">
-          <div className="view-selector">
-            <button 
-              className={`view-btn ${view === 'month' ? 'active' : ''}`}
-              onClick={() => changeView('month')}
-            >
-              월별
-            </button>
-            <button 
-              className={`view-btn ${view === 'week' ? 'active' : ''}`}
-              onClick={() => changeView('week')}
-            >
-              주별
-            </button>
-            <button 
-              className={`view-btn ${view === 'day' ? 'active' : ''}`}
-              onClick={() => changeView('day')}
-            >
-              일별
-            </button>
-          </div>
-        </div>
-        <div className="calendar-container2">
-          <div className="calendar-navigation">
-            <button className="prev-btn" onClick={handlePrev}>←</button>
-            {renderCalendarView()}
-            <button className="next-btn" onClick={handleNext}>→</button>
-          </div>
-        </div>
+  // 캘린더 이벤트 색상 설정
+  const eventColors = {
+    default: {
+      backgroundColor: '#EEF2FF',
+      borderColor: '#6366F1',
+      textColor: '#4F46E5'
+    },
+    important: {
+      backgroundColor: '#FEF2F2',
+      borderColor: '#EF4444',
+      textColor: '#DC2626'
+    },
+    casual: {
+      backgroundColor: '#F0FDF4',
+      borderColor: '#22C55E',
+      textColor: '#16A34A'
+    }
+  };
+
+  return (
+    <div className="meeting-manager-container">
+      <div className="kpi-dashboard modern-dashboard">
+        <KPICard title="요청된 미팅" value={events.length} color="#6366F1" />
+        <KPICard title="승인된 미팅" value={events.length} color="#22C55E" />
+        <KPICard title="취소된 미팅" value={0} color="#EF4444" />
+        <KPICard title="대기중인 미팅" value={0} color="#F59E0B" />
       </div>
-      <div className="manager-sidebar">
-        <h3>예정된 미팅</h3>
-        <div className="meeting-list">
-          {meetings.map(meeting => (
-            <div key={meeting.id} className="meeting-item" onClick={() => handleMeetingClick(meeting)}>
-              <div className="meeting-color" style={{backgroundColor: meeting.color === 'blue' ? '#bfdbfe' : meeting.color === 'orange' ? '#fed7aa' : '#fecaca'}}></div>
-              <div className="meeting-info">
-                <div className="meeting-title">{meeting.title}</div>
-                <div className="meeting-time">{meeting.time}</div>
-                <div className="meeting-participants">
-                  {meeting.participants.map((participant, idx) => (
-                    <div key={idx} className="participant-avatar">
-                      {participant.charAt(0)}
-                    </div>
-                  ))}
+      <div className="meeting-manager2col">
+        <div className="manager-main modern-main">
+          <div className="manager-header modern-header">
+            <div className="view-selector modern-view-selector">
+              <button 
+                className={`view-btn modern-view-btn ${calendarView === 'dayGridMonth' ? 'active' : ''}`}
+                onClick={() => changeView('month')}
+              >
+                월별
+              </button>
+              <button 
+                className={`view-btn modern-view-btn ${calendarView === 'timeGridWeek' ? 'active' : ''}`}
+                onClick={() => changeView('week')}
+              >
+                주별
+              </button>
+              <button 
+                className={`view-btn modern-view-btn ${calendarView === 'timeGridDay' ? 'active' : ''}`}
+                onClick={() => changeView('day')}
+              >
+                일별
+              </button>
+            </div>
+          </div>
+          <div className="calendar-container2 modern-calendar">
+            <FullCalendar
+              ref={calendarRef}
+              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+              initialView={calendarView}
+              headerToolbar={{
+                left: 'prev',
+                center: 'title',
+                right: 'next'
+              }}
+              events={events}
+              dateClick={handleDateClick}
+              eventClick={handleEventClick}
+              height="100%"
+              locale="ko"
+              allDaySlot={false}
+              slotMinTime="06:00:00"
+              slotMaxTime="24:00:00"
+              nowIndicator={true}
+              editable={true}
+              slotDuration="00:30:00"
+              slotLabelInterval="01:00"
+              expandRows={true}
+              stickyHeaderDates={true}
+              dayMaxEvents={true}
+              eventClassNames="modern-event"
+              dayCellClassNames="modern-day-cell"
+              slotLabelClassNames="modern-slot-label"
+              dayHeaderClassNames="modern-day-header"
+            />
+          </div>
+        </div>
+        <div className="manager-sidebar">
+          <h3>예정된 미팅</h3>
+          <div className="meeting-list">
+            {upcomingEvents.map(event => (
+              <div key={event.id} className="meeting-item" onClick={() => handleEventClick({ event })}>
+                <div className="meeting-color" style={{ backgroundColor: event.backgroundColor }}></div>
+                <div className="meeting-info">
+                  <div className="meeting-title">{event.title}</div>
+                  <div className="meeting-time">
+                    {new Date(event.start).toLocaleString('ko-KR', {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </div>
+                  <div className="meeting-participants">
+                    {event.extendedProps.participants.map((participant, idx) => (
+                      <div key={idx} className="participant-avatar">
+                        {participant.charAt(0)}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-        {/* 일정 상세 모달 */}
-        {selectedMeeting && <MeetingDetailModal meeting={selectedMeeting} onClose={() => setSelectedMeeting(null)} />}
-        {/* 일정 생성 모달 */}
-        {showCreateDialog && <MeetingCreateModal date={createDate} onClose={() => setShowCreateDialog(false)} />}
       </div>
+      {selectedMeeting && <MeetingDetailModal meeting={selectedMeeting} onClose={() => setSelectedMeeting(null)} />}
+      {showCreateDialog && (
+        <MeetingFormModal
+          date={createDate}
+          onSubmit={handleCreateMeeting}
+          onClose={() => setShowCreateDialog(false)}
+          isEdit={false}
+        />
+      )}
+      {showEditDialog && (
+        <MeetingFormModal
+          date={createDate}
+          meeting={selectedMeeting}
+          onSubmit={handleEditMeeting}
+          onClose={() => setShowEditDialog(false)}
+          isEdit={true}
+        />
+      )}
     </div>
-  </div>
   );
 }
 
