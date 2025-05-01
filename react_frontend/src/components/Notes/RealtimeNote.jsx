@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from 'react-oidc-context';
 import MicRecorder from 'mic-recorder-to-mp3';
 import '../../styles/notes.css';
 
@@ -7,6 +8,7 @@ const Mp3Recorder = new MicRecorder({ bitRate: 128 });
 
 function RealtimeNote() {
   const navigate = useNavigate();
+  const auth = useAuth();
   const [isRecording, setIsRecording] = useState(false);
   const [notes, setNotes] = useState([
     { time: '14:29', content: '금리에서 회의 진행 건에 관련해 회의를 진행하려고 합니다. 먼저는 오신 것들이 일지명해드리겠습니다.' },
@@ -17,10 +19,8 @@ function RealtimeNote() {
   ]);
   const [input, setInput] = useState('');
 
-  // mp3 녹음 결과 blob 저장
   const audioBlobRef = useRef(null);
 
-  // 녹음 시작
   const startRecording = async () => {
     try {
       await Mp3Recorder.start();
@@ -31,10 +31,9 @@ function RealtimeNote() {
     }
   };
 
-  // 녹음 중지
   const stopRecording = async () => {
     try {
-      const [, blob] = await Mp3Recorder.stop().getMp3(); // buffer 미사용, eslint 경고 해결
+      const [, blob] = await Mp3Recorder.stop().getMp3();
       audioBlobRef.current = blob;
       setIsRecording(false);
     } catch (err) {
@@ -43,7 +42,6 @@ function RealtimeNote() {
     }
   };
 
-  // 녹음 버튼 토글
   const toggleRecording = () => {
     if (isRecording) {
       stopRecording();
@@ -52,7 +50,6 @@ function RealtimeNote() {
     }
   };
 
-  // Blob을 base64로 변환
   const blobToBase64 = (blob) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -62,7 +59,6 @@ function RealtimeNote() {
     });
   };
 
-  // 저장하기 버튼 클릭 시 Lambda 호출
   const handleSave = async () => {
     if (!audioBlobRef.current) {
       alert('녹음된 오디오가 없습니다.');
@@ -70,18 +66,39 @@ function RealtimeNote() {
     }
     try {
       const audioBase64 = await blobToBase64(audioBlobRef.current);
-      const response = await fetch('https://4u8cc1twf2.execute-api.ap-northeast-2.amazonaws.com/prod/record-audio', {
+
+      if (!auth.isAuthenticated || !auth.user) {
+        alert('로그인이 필요합니다.');
+        return;
+      }
+
+      // id_token 추출
+      const idToken = auth.user.id_token || auth.user.idToken;
+      if (!idToken) {
+        alert('ID 토큰을 가져올 수 없습니다.');
+        return;
+      }
+
+      const requestOptions = {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken.trim()}`,
+        },
         body: JSON.stringify({
           audio_data: audioBase64,
           file_format: 'mp3',
+          id_token: idToken // Lambda로 id_token 전달
         }),
-      });
+      };
+
+      const response = await fetch('https://4u8cc1twf2.execute-api.ap-northeast-2.amazonaws.com/prod/record-audio', requestOptions);
       const result = await response.json();
-      
+      console.log('Response Body:', result);
       if (result.success) {
-        // navigate('/ai-meeting-note');
+        navigate('/ai-meeting-note');
+      } else {
+        alert('오류: ' + (result.error || '저장 실패'));
       }
     } catch (err) {
       console.error('저장 중 오류 발생:', err.message);
@@ -92,7 +109,7 @@ function RealtimeNote() {
   React.useEffect(() => {
     if (isRecording) {
       const interval = setInterval(() => {
-        setNotes(prev => ([...prev, { time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), content: 'AWS Transcribe에서 받아온 새로운 노트입니다.' }]));
+        setNotes(prev => ([...prev, { time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), content: 'AWS Transcribe에서 받아온 새로운 노트입니다.' }]));
       }, 7000);
       return () => clearInterval(interval);
     }
@@ -100,10 +117,10 @@ function RealtimeNote() {
 
   const handleSendMessage = () => {
     if (!input.trim()) return;
-    const newUserMessage = { 
-      role: 'user', 
-      content: input, 
-      time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
+    const newUserMessage = {
+      role: 'user',
+      content: input,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
     setMessages([...messages, newUserMessage]);
     setInput('');
@@ -111,7 +128,7 @@ function RealtimeNote() {
       setMessages(prev => ([...prev, {
         role: 'assistant',
         content: 'AI 답변 예시입니다.',
-        time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }]));
     }, 1000);
   };
@@ -151,9 +168,9 @@ function RealtimeNote() {
             ))}
           </div>
           <div className="chatbot-input">
-            <input 
-              type="text" 
-              value={input} 
+            <input
+              type="text"
+              value={input}
               onChange={e => setInput(e.target.value)}
               placeholder="챗봇에게 질문하세요..."
               onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
