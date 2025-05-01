@@ -1,15 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react'; // 🟢 useRef 추가
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from 'react-oidc-context';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import '../../styles/meetingschedule.css';
-
+import { fetchMeetings, createMeeting, updateMeeting, deleteMeeting } from '../../services/apiService';
 function MeetingManager() {
   const { view } = useParams();
   const navigate = useNavigate();
-  const calendarRef = useRef(null); // 🟢 FullCalendar 참조
+  const calendarRef = useRef(null);
+  const auth = useAuth(); // react-oidc-context에서 인증 정보 가져오기
+  const [isLoading, setIsLoading] = useState(false);
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedMeeting, setSelectedMeeting] = useState(null);
@@ -75,11 +78,57 @@ function MeetingManager() {
     }
   };
 
-  useEffect(() => {
-    if (view) {
-      changeView(view);
+// 미팅 목록 가져오기
+useEffect(() => {
+  const loadMeetings = async () => {
+    try {
+      setIsLoading(true);
+      
+      // 인증 상태 확인
+      if (!auth.isAuthenticated || !auth.user) {
+        console.log('사용자가 인증되지 않았습니다. 기본 데이터를 사용합니다.');
+        return; // 기본 더미 데이터 유지
+      }
+      
+      // id_token 또는 access_token 가져오기
+      const token = auth.user?.id_token || auth.user?.access_token;
+      console.log('토큰 타입:', auth.user?.id_token ? 'id_token' : 'access_token');
+      console.log('토큰 첫 30자:', token?.substring(0, 30));
+
+      // API 호출하여 미팅 목록 가져오기
+      const data = await fetchMeetings(token);
+      
+      // 응답 데이터 처리
+      if (data && data.meetings) {
+        console.log('미팅 데이터 수신:', data.meetings.length + '개 항목');
+        
+        // FullCalendar 형식으로 데이터 변환
+        const formattedEvents = data.meetings.map(meeting => ({
+          id: meeting.meetingId,
+          title: meeting.title,
+          start: meeting.start,
+          end: meeting.end,
+          backgroundColor: meeting.color?.backgroundColor || eventColors.default.backgroundColor,
+          borderColor: meeting.color?.borderColor || eventColors.default.borderColor,
+          extendedProps: {
+            participants: meeting.participants,
+            desc: meeting.description || ''
+          }
+        }));
+        
+        setEvents(formattedEvents);
+      }
+    } catch (error) {
+      console.error('미팅 목록 로딩 오류:', error);
+      // 오류 발생 시 사용자에게 알림 (선택 사항)
+      // alert('미팅 목록을 불러오는 중 오류가 발생했습니다: ' + error.message);
+    } finally {
+      setIsLoading(false);
     }
-  }, [view]);
+  };
+
+  loadMeetings();
+}, [auth.isAuthenticated, auth.user]);
 
   const handleDateClick = (arg) => {
     setCreateDate(arg.date);
@@ -101,44 +150,116 @@ function MeetingManager() {
     setSelectedMeeting(event);
   };
 
-  const handleCreateMeeting = (meetingData) => {
-    const newEvent = {
-      id: Date.now(),
-      title: meetingData.title,
-      start: meetingData.start,
-      end: meetingData.end,
-      ...eventColors.default,
-      extendedProps: {
-        participants: meetingData.participants,
-        desc: meetingData.desc
-      }
-    };
-    setEvents(prevEvents => [...prevEvents, newEvent]);
-    setShowCreateDialog(false);
-  };
-
-  const handleEditMeeting = (meetingData) => {
-    const updatedEvents = events.map(event => 
-      event.id === meetingData.id ? {
-        ...event,
+   // 기존 함수 수정: handleCreateMeeting
+   const handleCreateMeeting = async (meetingData) => {
+    if (!auth.isAuthenticated) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      const token = auth.user?.id_token || auth.user?.access_token;
+      
+      const result = await createMeeting(token, {
         title: meetingData.title,
-        start: meetingData.start,
-        end: meetingData.end,
+        start: meetingData.start.toISOString(),
+        end: meetingData.end.toISOString(),
+        participants: meetingData.participants,
+        description: meetingData.desc
+      });
+      console.log('미팅 생성 성공:', result);
+      // 성공 시 로컬 상태 업데이트
+      const newEvent = {
+        id: result.meetingId,
+        title: meetingData.title,
+        start: meetingData.start.toISOString(),
+        end: meetingData.end.toISOString(),
+        ...eventColors.default,
         extendedProps: {
           participants: meetingData.participants,
           desc: meetingData.desc
         }
-      } : event
-    );
-    setEvents(updatedEvents);
-    setSelectedMeeting(null);
-    setShowEditDialog(false);
+      };
+      
+      setEvents(prevEvents => [...prevEvents, newEvent]);
+      setShowCreateDialog(false);
+      
+      alert('미팅이 성공적으로 생성되었습니다.');
+    } catch (error) {
+      console.error('미팅 생성 오류:', error);
+      alert(`미팅 생성 중 오류가 발생했습니다: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+
+  const handleEditMeeting = async (meetingData) => {
+    if (!auth.isAuthenticated) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      const token = auth.user.access_token;
+      
+      await updateMeeting(token, meetingData.id, {
+        title: meetingData.title,
+        start: meetingData.start.toISOString(),
+        end: meetingData.end.toISOString(),
+        participants: meetingData.participants,
+        description: meetingData.desc
+      });
+      
+      // 로컬 상태 업데이트
+      const updatedEvents = events.map(event => 
+        event.id === meetingData.id ? {
+          ...event,
+          title: meetingData.title,
+          start: meetingData.start.toISOString(),
+          end: meetingData.end.toISOString(),
+          extendedProps: {
+            participants: meetingData.participants,
+            desc: meetingData.desc
+          }
+        } : event
+      );
+      
+      setEvents(updatedEvents);
+      setSelectedMeeting(null);
+      setShowEditDialog(false);
+    } catch (error) {
+      console.error('미팅 수정 오류:', error);
+      alert(`미팅 수정 중 오류가 발생했습니다: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleDeleteMeeting = (id) => {
+  const handleDeleteMeeting = async (id) => {
+    if (!auth.isAuthenticated) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+    
     if (window.confirm('정말로 이 일정을 삭제하시겠습니까?')) {
-      setEvents(events.filter(event => event.id !== id));
-      setSelectedMeeting(null);
+      try {
+        setIsLoading(true);
+        const token = auth.user.access_token;
+        
+        await deleteMeeting(token, id);
+        
+        // 로컬 상태 업데이트
+        setEvents(events.filter(event => event.id !== id));
+        setSelectedMeeting(null);
+      } catch (error) {
+        console.error('미팅 삭제 오류:', error);
+        alert(`미팅 삭제 중 오류가 발생했습니다: ${error.message}`);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
