@@ -1,24 +1,70 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../../styles/notes.css';
+import { useAuth } from 'react-oidc-context';
 
 function AIMeetingNote() {
-  const [viewMode, setViewMode] = useState('transcript'); // 'transcript' or 'summary'
-  const [summaryType, setSummaryType] = useState('bulleted'); // 'bulleted', 'narrative', 'action-items', etc.
-  
-  const meetingHistory = [
-    { id: 1, title: '일간회의 (프로젝트 타임라인)', date: '2025-04-22' },
-    { id: 2, title: '일간회의 (아키텍처 및 개발 계획 피드백)', date: '2025-04-21' },
-    { id: 3, title: '일간회의', date: '2025-04-20' },
-    { id: 4, title: 'Client Presentation', date: '2025-04-17' }
-  ];
-  
+  const auth = useAuth();
+  const navigate = useNavigate();
+  const [viewMode, setViewMode] = useState('transcript');
+  const [summaryType, setSummaryType] = useState('bulleted');
+  const [meetingHistory, setMeetingHistory] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  const idToken = auth.user?.id_token || auth.user?.idToken || '';
+  const userId = auth.user?.profile?.sub || 'guest-user';
+  console.log(userId);
+
+  useEffect(() => {
+    if (!idToken) return;
+    setLoading(true);
+
+    console.log('API 호출 시작:', userId);
+
+    fetch(`https://e8477gmw63.execute-api.ap-northeast-2.amazonaws.com/prod/meeting-history?user_id=${userId}`, {
+      headers: {
+        'Authorization': `Bearer ${idToken}`
+      }
+    })
+      .then(res => {
+        console.log('API 응답 상태:', res.status);
+        return res.json();
+      })
+      .then(data => {
+        console.log('API 응답 데이터:', data);
+        console.log('meetings 배열:', data.meetings);
+        setMeetingHistory(Array.isArray(data.meetings) ? data.meetings : []);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error('API 오류:', error);
+        setMeetingHistory([]);
+        setLoading(false);
+      });
+  }, [idToken, userId]);
+
+  // 여기서 filteredMeetings를 선언!
+  const filteredMeetings = meetingHistory.filter(
+    meeting =>
+      (meeting.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (meeting.meeting_date || '').includes(searchTerm)
+  );
+
+  // 렌더링 시 meetingHistory 상태 확인
+  useEffect(() => {
+    console.log('현재 meetingHistory:', meetingHistory);
+    console.log('필터링된 meetings:', filteredMeetings);
+  }, [meetingHistory, filteredMeetings]);
+
+
   const transcriptContent = [
     { time: '14:29', speaker: '김유리', content: '금리에 대한 회의 진행 및 최근의 트렌드와 이슈에 대한 논의가 있었습니다. 그와 관련된 의견들이 공유되었고, 글로벌 스탠더드와 현지화 전략이 화두였습니다.' },
     { time: '15:11', speaker: '박지연', content: '글로벌 스탠더드와 현지화 전략에 대해 논의. 사용자 경험 개선을 위한 스크라이빙 기능 논의.' },
     { time: '15:36', speaker: '김유리', content: '글로벌 스탠더드는 우리에게 약간의 거리가 있어 보입니다.' },
     { time: '16:27', speaker: '박지연', content: '스크라이빙 기능의 구체적인 구현 방안 논의.' }
   ];
-  
+
   const summaryContent = {
     bulleted: {
       title: '주요 논의 사항',
@@ -47,10 +93,10 @@ function AIMeetingNote() {
 
   const handleExport = () => {
     if (viewMode === 'transcript') {
-      const content = transcriptContent.map(line => 
+      const content = transcriptContent.map(line =>
         `${line.time} [${line.speaker}] ${line.content}`
       ).join('\n');
-      
+
       const blob = new Blob([content], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -64,7 +110,7 @@ function AIMeetingNote() {
       const content = Array.isArray(summaryContent[summaryType].content)
         ? summaryContent[summaryType].content.join('\n')
         : summaryContent[summaryType].content;
-      
+
       const blob = new Blob([content], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -82,28 +128,48 @@ function AIMeetingNote() {
       {/* 중앙: 미팅 히스토리 */}
       <section className="ai-history-section">
         <div className="ai-history-title">MEETING HISTORY</div>
-        <input className="ai-history-search" type="text" placeholder="Search meetings..." />
-        <ul className="ai-history-list">
-          {meetingHistory.map(meeting => (
-            <li key={meeting.id} className="ai-history-item">
-              <div className="ai-history-item-title">{meeting.title}</div>
-              <div className="ai-history-item-date">{meeting.date}</div>
-            </li>
-          ))}
-        </ul>
+        <input
+          className="ai-history-search"
+          type="text"
+          placeholder="Search meetings..."
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+        />
+        {loading ? (
+          <div className="ai-history-loading">불러오는 중...</div>
+        ) : filteredMeetings.length === 0 ? (
+          <div style={{ textAlign: 'center', margin: '2em 0' }}>
+            <div>회의 기록이 없습니다.</div>
+            <button
+              className="main-btn"
+              style={{ marginTop: '1em' }}
+              onClick={() => navigate('/global-note-create')}
+            >
+              글로바노트 생성
+            </button>
+          </div>
+        ) : (
+          <ul className="ai-history-list">
+            {filteredMeetings.map(meeting => (
+              <li key={meeting.meeting_num || meeting.id} className="ai-history-item">
+                <div className="ai-history-item-title">{meeting.title || ''}</div>
+                <div className="ai-history-item-date">{meeting.meeting_date || ''}</div>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
-
       {/* 우측: 회의 상세 */}
       <main className="ai-note-section">
         <div className="ai-note-header">
           <div className="ai-note-tabs">
-            <button 
+            <button
               className={`ai-note-tab ${viewMode === 'transcript' ? 'active' : ''}`}
               onClick={() => setViewMode('transcript')}
             >
               전체 트랜스크립션
             </button>
-            <button 
+            <button
               className={`ai-note-tab ${viewMode === 'summary' ? 'active' : ''}`}
               onClick={() => setViewMode('summary')}
             >
@@ -137,7 +203,7 @@ function AIMeetingNote() {
               </div>
               <div className="ai-summary-type-row">
                 <label htmlFor="summaryType" className="ai-summary-type-label">회의록 타입 :</label>
-                <select 
+                <select
                   id="summaryType"
                   className="ai-summary-type-select"
                   value={summaryType}

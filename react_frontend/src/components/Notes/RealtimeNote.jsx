@@ -94,11 +94,17 @@ function RealtimeNote() {
 
       const response = await fetch('https://4u8cc1twf2.execute-api.ap-northeast-2.amazonaws.com/prod/record-audio', requestOptions);
       const result = await response.json();
-      console.log('Response Body:', result);
-      if (result.success) {
+      
+      // 응답 상태와 결과 확인
+      if (response.status === 200) {
+        console.log('API 요청 성공:', result);
         navigate('/ai-meeting-note');
       } else {
-        alert('오류: ' + (result.error || '저장 실패'));
+        console.error('API 요청 실패:', {
+          status: response.status,
+          statusText: response.statusText,
+          result: result
+        });
       }
     } catch (err) {
       console.error('저장 중 오류 발생:', err.message);
