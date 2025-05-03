@@ -1,7 +1,10 @@
 // src/services/apiService.js
 // 개발 환경에서는 상대 경로 사용 (프록시를 통해 요청)
-const API_BASE_URL =process.env.REACT_APP_API_BASE_URL;
-const API_KEY = process.env.REACT_APP_API_KEY;
+const API_CREATE_MEETING_URL = process.env.REACT_APP_API_CREATE_MEETING_URL;
+const API_CREATE_MEETING_KEY = process.env.REACT_APP_API_CREATE_MEETING_KEY;
+// 사용량 정보 가져오기
+const API_USER_QUOTA_URL = process.env.REACT_APP_API_USER_QUOTA_URL;
+const API_USER_QUOTA_KEY= process.env.REACT_APP_API_USER_QUOTA_KEY;
 
 // 응답 처리 헬퍼 함수
 const handleResponse = async (response) => {
@@ -28,14 +31,14 @@ const handleResponse = async (response) => {
 // 미팅 목록 조회 API
 export const fetchMeetings = async (token) => {
   try {
-    console.log('미팅 목록 조회 요청 전송:', `${API_BASE_URL}/meetings`);
+    console.log('미팅 목록 조회 요청 전송:', `${API_CREATE_MEETING_URL}/meetings`);
     
-    const response = await fetch(`${API_BASE_URL}/meetings`, {
+    const response = await fetch(`${API_CREATE_MEETING_URL}/meetings`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
-        'x-api-key': API_KEY
+        'x-api-key': API_CREATE_MEETING_KEY
       }
     });
     
@@ -49,15 +52,15 @@ export const fetchMeetings = async (token) => {
 // 미팅 생성 API
 export const createMeeting = async (token, meetingData) => {
   try {
-    console.log('미팅 생성 요청 전송:', `${API_BASE_URL}/meetings`);
+    console.log('미팅 생성 요청 전송:', `${API_CREATE_MEETING_URL}/meetings`);
     console.log('미팅 데이터:', meetingData);
     
-    const response = await fetch(`${API_BASE_URL}/meetings`, {
+    const response = await fetch(`${API_CREATE_MEETING_URL}/meetings`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
-        'x-api-key': API_KEY
+        'x-api-key': API_CREATE_MEETING_KEY
       },
       body: JSON.stringify(meetingData)
     });
@@ -72,14 +75,14 @@ export const createMeeting = async (token, meetingData) => {
 // 미팅 수정 API
 export const updateMeeting = async (token, meetingId, meetingData) => {
   try {
-    console.log('미팅 수정 요청 전송:', `${API_BASE_URL}/meetings/${meetingId}`);
+    console.log('미팅 수정 요청 전송:', `${API_CREATE_MEETING_URL}/meetings/${meetingId}`);
     
-    const response = await fetch(`${API_BASE_URL}/meetings/${meetingId}`, {
+    const response = await fetch(`${API_CREATE_MEETING_URL}/meetings/${meetingId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
-        'x-api-key': API_KEY
+        'x-api-key': API_CREATE_MEETING_KEY
       },
       body: JSON.stringify(meetingData)
     });
@@ -94,19 +97,45 @@ export const updateMeeting = async (token, meetingId, meetingData) => {
 // 미팅 삭제 API
 export const deleteMeeting = async (token, meetingId) => {
   try {
-    console.log('미팅 삭제 요청 전송:', `${API_BASE_URL}/meetings/${meetingId}`);
+    console.log('미팅 삭제 요청 전송:', `${API_CREATE_MEETING_URL}/meetings/${meetingId}`);
     
-    const response = await fetch(`${API_BASE_URL}/meetings/${meetingId}`, {
+    const response = await fetch(`${API_CREATE_MEETING_URL}/meetings/${meetingId}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`,
-        'x-api-key': API_KEY
+        'x-api-key': API_CREATE_MEETING_KEY
       }
     });
     
     return await handleResponse(response);
   } catch (error) {
     console.error('미팅 삭제 오류:', error);
+    throw error;
+  }
+};
+
+// 사용자 할당량 조회 API[05.03]
+export const fetchUserQuota = async (token, userId) => {
+  try {
+    console.log('사용자 할당량 조회 요청 전송:', `${API_USER_QUOTA_URL}/user/quota`);
+    
+    // URL에 userId를 쿼리 파라미터로 추가 (필요한 경우)
+    const url = userId 
+      ? `${API_USER_QUOTA_URL}/user/quota?userId=${userId}`
+      : `${API_USER_QUOTA_URL}/user/quota`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'x-api-key': API_USER_QUOTA_KEY
+      }
+    });
+    
+    return await handleResponse(response);
+  } catch (error) {
+    console.error('사용자 할당량 조회 오류:', error);
     throw error;
   }
 };

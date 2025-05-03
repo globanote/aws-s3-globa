@@ -1,323 +1,224 @@
-/* 전체 배경 및 폰트 개선 */
-body {
-  background: linear-gradient(120deg, #f8fafc 0%, #e0e7ff 100%);
-  font-family: 'Pretendard', 'Noto Sans KR', Arial, sans-serif;
-  color: #222;
-}
-
-  /* Dashboard Styles */
-  .dashboard-container {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-  
-  .dashboard-top-section {
-    display: flex;
-    gap: 20px;
-    height: 100%;
-  }
-  
-  .dashboard-left {
-    flex: 1;
-    background-color: white;
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    padding: 20px;
-    overflow: auto;
-  }
-  
-  .dashboard-right {
-    flex: 1;
-    background-color: white;
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    padding: 20px;
-    overflow: auto;
-  }
-  
-  .dashboard-bottom-section {
-    height: 60%;
-    background: white;
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    overflow: hidden;
-  }
-  /* Usage Tracker Styles */
-  .usage-tracker h2 {
-    font-size: 1.3rem;
-    margin-bottom: 15px;
-    margin-top: 0px;
-  }
-  
-  .usage-header {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 20px;
-    background-color: #f8f9fa;
-    padding: 10px;
-    border-radius: 5px;
-  }
-  
-  .days-used {
-    font-size: 1.2rem;
-    font-weight: bold;
-  }
-  
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 15px;
-  }
-  
-  .stat-card {
-    background-color: #f8f9fa;
-    padding: 15px;
-    border-radius: 5px;
-  }
-  
-  .stat-card h3 {
-    font-size: 0.9rem;
-    margin-bottom: 10px;
-    color: #6b7280;
-  }
-  
-  /* Meeting Chatbot Styles */
-  .meeting-chatbot h2 {
-    font-size: 1.3rem;
-    margin-bottom: 15px;
-    margin-top: 0px;
-  }
-  
-  .chatbot-messages {
-    height: calc(100% - 100px);
-    overflow-y: auto;
-    margin-bottom: 15px;
-    padding: 10px;
-    background-color: #f8f9fa;
-    border-radius: 5px;
-  }
-  
-  .message {
-    margin-bottom: 10px;
-    padding: 10px;
-    border-radius: 5px;
-    max-width: 85%;
-  }
-  
-  .message.user {
-    background-color: #e0e7ff;
-    align-self: flex-end;
-    margin-left: auto;
-  }
-  
-  .message.assistant {
-    background-color: #f3f4f6;
-  }
-  
-  .message.system {
-    background-color: #f3f4f6;
-    border-left: 3px solid #6b7280;
-    color: #6b7280;
-  }
-  
-  .message-time {
-    font-size: 0.75rem;
-    color: #6b7280;
-    text-align: right;
-    margin-top: 5px;
-  }
-  
-  .chatbot-input {
-    display: flex;
-    gap: 10px;
-  }
-  
-  .chatbot-input input {
-    flex-grow: 1;
-    padding: 10px;
-    border: 1px solid #e5e7eb;
-    border-radius: 5px;
-  }
-  
-  .chatbot-input button {
-    padding: 10px 15px;
-    background-color: #3b82f6;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-  }
-
-/* 애니메이션 효과 */
-button, .calendar-cell, .sidebar-item {
-  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
-}
-.calendar-section {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr)
-}
-
-.calendar-container {
-  display: flex;
-  gap: 20px;
-  height: 100%;
-}
-
-.calendar-left {
-  flex: 0.98;
-  background: white;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+/* 사이드바 스타일 */
+.sidebar {
+  width: 240px;
+  height: 100vh;
+  background-color: white;
+  box-shadow: 1px 0 5px rgba(0,0,0,0.05);
   display: flex;
   flex-direction: column;
-  height: 100%;
-  overflow: hidden;
+  overflow-y: auto;
+  position: fixed;
+  left: 0;
+  top: 0;
 }
 
-.calendar-header {
-  margin-bottom: 20px;
+.sidebar-header {
+  padding: 20px;
+  font-size: 1.3rem;
+  font-weight: 600;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e40af;
+}
+
+.sidebar-menu {
+  padding: 10px 0;
+  flex: 1;
+}
+
+.sidebar-item {
+  padding: 12px 20px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-}
-
-.month-navigation {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.month-nav-btn {
-  background: none;
-  border: none;
-  font-size: 16px;
-  color: #586069;
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: background-color 0.2s;
+  color: #64748b;
+  font-weight: 500;
 }
 
-.month-nav-btn:hover {
-  background-color: #f6f8fa;
+.sidebar-item:hover {
+  background-color: #f8fafc;
+  color: #3b82f6;
 }
 
-.calendar-header h3 {
-  font-size: 1.2rem;
-  color: #333;
-  margin: 0;
-  min-width: 120px;
-  text-align: center;
+.sidebar-item.active {
+  background-color: #eff6ff;
+  color: #3b82f6;
+  border-left: 3px solid #3b82f6;
 }
 
-.calendar-cell.today {
+.sidebar-item .icon {
+  margin-right: 12px;
+  font-size: 1.1rem;
+}
+
+.sidebar-footer {
+  padding: 15px 20px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.global-note-btn {
+  width: 100%;
+  padding: 10px;
   background-color: #3b82f6;
   color: white;
-  font-weight: 600;
-}
-
-.calendar-cell.today.has-schedule::after {
-  background-color: white;
-}
-
-.calendar-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-}
-
-.calendar-cell {
-  min-height: 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: 500;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #e1e4e8;
-  cursor: pointer;
-  position: relative;
-  font-size: 14px;
-  background: white;
-  transition: background-color 0.2s;
-  padding: 8px;
+  margin-bottom: 15px;
 }
 
-.calendar-cell:hover {
-  background-color: #f6f8fa;
+.global-note-btn:hover {
+  background-color: #2563eb;
 }
 
-.calendar-cell.header {
-  font-weight: 600;
-  background: #f6f8fa;
-  color: #586069;
-  font-size: 13px;
-  height: 30px;
-  min-height: auto;
-  padding: 0;
-}
-
-.calendar-cell.empty {
-  background: #fafbfc;
-  cursor: default;
-}
-
-.calendar-cell.has-schedule::after {
-  content: '';
-  position: absolute;
-  bottom: 8px;
-  width: 6px;
-  height: 6px;
-  background: #0366d6;
-  border-radius: 50%;
-}
-
-.schedule-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.schedule-item {
-  padding: 10px;
-  border-bottom: 1px solid #e1e4e8;
-  cursor: pointer;
-}
-
-.schedule-item:last-child {
-  border-bottom: none;
-}
-
-
-.schedule-participants {
+.user-info {
   display: flex;
-  gap: 5px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.participant {
-  background: #f6f8fa;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 12px;
-  color: #586069;
+.usage-info {
+  font-size: 0.9rem;
+  color: #64748b;
+  text-align: center;
+  margin-bottom: 5px;
+  font-weight: 500;
 }
 
 .usage-progress-bar {
   width: 100%;
-  height: 10px;
+  height: 8px;
   background: #e5e7eb;
   border-radius: 5px;
-  margin-bottom: 10px;
+  margin: 5px 0;
   overflow: hidden;
 }
+
 .usage-progress-fill {
   height: 100%;
   background: #3b82f6;
   border-radius: 5px;
   transition: width 0.3s;
-} 
+}
+
+.quota-detail {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.8rem;
+  color: #64748b;
+  margin: 5px 0;
+}
+
+.used-time {
+  font-weight: 500;
+  color: #334155;
+}
+
+.remaining-time {
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 8px;
+  background-color: #f8fafc;
+  border-radius: 5px;
+}
+
+.profile-image {
+  cursor: pointer;
+}
+
+.user-name {
+  flex: 1;
+  font-weight: 500;
+  color: #334155;
+}
+
+.settings-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  padding: 5px;
+  border-radius: 4px;
+}
+
+.settings-btn:hover {
+  background-color: #f1f5f9;
+  color: #3b82f6;
+}
+
+.logout-button {
+  margin-top: 15px;
+  width: 100%;
+  padding: 8px;
+  background: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #64748b;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.logout-button:hover {
+  background-color: #f8fafc;
+  color: #ef4444;
+  border-color: #fecaca;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 60px;
+    overflow: visible;
+  }
+  
+  .sidebar-header, 
+  .sidebar-item span:not(.icon), 
+  .usage-info, 
+  .quota-detail, 
+  .user-name, 
+  .global-note-btn span {
+    display: none;
+  }
+  
+  .sidebar-item .icon {
+    margin-right: 0;
+    font-size: 1.3rem;
+  }
+  
+  .sidebar-item {
+    justify-content: center;
+    padding: 15px 10px;
+  }
+  
+  .global-note-btn {
+    padding: 8px;
+    justify-content: center;
+  }
+  
+  .usage-progress-bar {
+    width: 40px;
+    margin: 10px auto;
+  }
+  
+  .user-profile {
+    justify-content: center;
+    padding: 5px;
+  }
+}
