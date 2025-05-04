@@ -7,6 +7,14 @@ import '../../styles/notes.css';
 const Mp3Recorder = new MicRecorder({ bitRate: 128 });
 
 function GlobalNoteCreate() {
+  const REACT_APP_PRESIGN_API_URL = process.env.REACT_APP_PRESIGN_API_URL;
+  const REACT_APP_MEETING_INFO_API_URL = process.env.REACT_APP_MEETING_INFO_API_URL;
+  const REACT_APP_RECORD_AUDIO_API_URL = process.env.REACT_APP_RECORD_AUDIO_API_URL;
+  const REACT_APP_DOCUMENT_API_URL = process.env.REACT_APP_DOCUMENT_API_URL;
+  const REACT_APP_TRANSCRIPT_JOB_API_URL = process.env.REACT_APP_TRANSCRIPT_JOB_API_URL;
+  const DOCUMENT_API_KEY = process.env.REACT_APP_DOCUMENT_API_KEY;
+  const JOB_TRACKER_API_KEY = process.env.REACT_APP_JOB_TRACKER_API_KEY;
+
   const navigate = useNavigate();
   const auth = useAuth();
 
@@ -23,12 +31,18 @@ function GlobalNoteCreate() {
   const audioBlobRef = useRef(null);
   const [file, setFile] = useState(null);
 
+  // 참가 인원 드롭다운 옵션
+  const participantOptions = Array.from({ length: 15 }, (_, i) => i + 2);
+
+  // 사용자 정보
   const getIdToken = () => auth.user?.id_token || auth.user?.idToken || '';
   const getUserId = () => auth.user?.profile?.sub || 'guest-user';
 
+  // 유니크 파일명 생성
   const createUniqueFilename = (ext = 'mp3') =>
     `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${ext}`;
 
+  // Presigned URL 요청
   const getPresignedUrl = async (file, uniqueFilename) => {
     const userId = getUserId();
     const requestData = {
@@ -37,48 +51,33 @@ function GlobalNoteCreate() {
       content_type: file.type,
       user_id: userId
     };
-    const response = await fetch('https://8gszri48w4.execute-api.ap-northeast-2.amazonaws.com/prod/presign', {
+    const response = await fetch(REACT_APP_PRESIGN_API_URL, {
       method: 'POST',
-      mode: 'cors',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestData),
     });
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Presigned URL 요청 실패: ${errorText}`);
-    }
-    const data = await response.json();
-    return data.url;
+    if (!response.ok) throw new Error('Presigned URL 요청 실패');
+    return (await response.json()).url;
   };
 
+  // S3 업로드
   const uploadToS3 = async (presignedUrl, file) => {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.upload.addEventListener('progress', (event) => {
         if (event.lengthComputable) {
-          const percentComplete = Math.round((event.loaded / event.total) * 100);
-          setUploadProgress(percentComplete);
+          setUploadProgress(Math.round((event.loaded / event.total) * 100));
         }
       });
-      xhr.addEventListener('load', () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          resolve(xhr.response);
-        } else {
-          reject(new Error(`Upload failed with status ${xhr.status}`));
-        }
-      });
-      xhr.addEventListener('error', () => {
-        reject(new Error('Upload failed due to network error'));
-      });
+      xhr.addEventListener('load', () => xhr.status >= 200 && xhr.status < 300 ? resolve() : reject());
+      xhr.addEventListener('error', () => reject());
       xhr.open('PUT', presignedUrl);
       xhr.setRequestHeader('Content-Type', file.type);
       xhr.send(file);
     });
   };
 
+  // blob to base64 변환
   const blobToBase64 = (blob) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -100,137 +99,7 @@ function GlobalNoteCreate() {
     audio_filename
   });
 
-  // 실시간 녹음 "생성" 핸들러 (직렬 실행)
-  const handleCreate = async () => {
-    setErrorMessage('');
-    if (!title || !purpose) {
-      setErrorMessage('제목과 목적을 입력하세요.');
-      return;
-    }
-    if (!audioBlobRef.current) {
-      setErrorMessage('녹음된 오디오가 없습니다.');
-      return;
-    }
-    try {
-      const idToken = getIdToken();
-      const meetingId = `${getUserId()}-${Date.now()}`;
-      const now = new Date();
-      const nowStr = now.toISOString().slice(0, 16).replace('T', ' ').replace(/:/g, '-');
-      const meeting_date = meetingDate || nowStr;
-      const created_at = nowStr;
-      const uniqueFilename = createUniqueFilename('mp3');
-
-      const payload = getMeetingPayload(meetingId, nowStr, meeting_date, created_at, uniqueFilename);
-      const audioBase64 = await blobToBase64(audioBlobRef.current);
-
-      // 회의 정보 저장
-      const meetingRes = await fetch('https://w06jd1v299.execute-api.ap-northeast-2.amazonaws.com/prod/meeting-info', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      // 음성파일 저장
-      const audioRes = await fetch('https://4u8cc1twf2.execute-api.ap-northeast-2.amazonaws.com/prod/record-audio', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`,
-        },
-        body: JSON.stringify({
-          audio_data: audioBase64,
-          file_format: 'mp3',
-          id_token: idToken,
-          meeting_id: meetingId,
-          meeting_date,
-          created_at,
-          audio_filename: uniqueFilename
-        }),
-      });
-      if (audioRes.status === 200 && meetingRes.status === 200) {
-        alert("회의록을 생성하고 있습니다. 잠시만 기다려주세요.")
-        navigate('/ai-meeting-note');
-      } else {
-        alert("오류가 발생하였습니다.")
-        return;
-      }
-    } catch (err) {
-      setErrorMessage(err.message || '저장 중 오류 발생');
-    }
-  };
-
-  // 업로드 핸들러 (병렬 실행)
-  const handleUpload = async () => {
-    setErrorMessage('');
-    if (!title || !purpose || !meetingDate || !file) {
-      setErrorMessage('필수 정보를 모두 입력하세요.');
-      return;
-    }
-    setUploadStatus('uploading');
-    setUploadProgress(0);
-
-    try {
-      const idToken = getIdToken();
-      const meetingId = `${getUserId()}-${Date.now()}`;
-      const now = new Date();
-      const nowStr = now.toISOString().slice(0, 16).replace('T', ' ').replace(/:/g, '-');
-      const meeting_date = meetingDate || nowStr;
-      const created_at = nowStr;
-      const fileExtension = file.name.split('.').pop();
-      const uniqueFilename = createUniqueFilename(fileExtension);
-
-      const payload = getMeetingPayload(meetingId, nowStr, meeting_date, created_at, uniqueFilename);
-
-      // 병렬 실행: Presigned URL 요청 & 회의 정보 저장
-      const [presignedUrl, meetingRes] = await Promise.all([
-        getPresignedUrl(file, uniqueFilename),
-        fetch('https://w06jd1v299.execute-api.ap-northeast-2.amazonaws.com/prod/meeting-info', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${idToken}`,
-          },
-          body: JSON.stringify(payload),
-        }),
-      ]);
-
-      // S3 업로드
-      await uploadToS3(presignedUrl, file);
-
-      // 회의 정보 저장 결과 확인
-
-      if (meetingRes.status === 200) {
-        setUploadStatus('success');
-        setUploadProgress(100);
-        alert("회의록을 생성하고 있습니다. 잠시만 기다려주세요.")
-        navigate('/ai-meeting-note');
-      }
-      else {
-        alert("오류가 발생하였습니다.")
-        return;
-      }
-    } catch (err) {
-      setUploadStatus('error');
-      setErrorMessage(err.message || '업로드 중 오류 발생');
-    }
-  };
-
-  const handleFileSelect = (e) => {
-    const selectedFile = e.target.files[0];
-    if (selectedFile && selectedFile.type.startsWith('audio/')) {
-      setFile(selectedFile);
-      setUploadStatus('idle');
-      setErrorMessage('');
-    } else {
-      setErrorMessage('오디오 파일만 업로드 가능합니다.');
-    }
-  };
-
-  const participantOptions = Array.from({ length: 15 }, (_, i) => i + 2);
-
+  // 녹음 제어 함수
   const startRecording = async () => {
     try {
       await Mp3Recorder.start();
@@ -260,9 +129,157 @@ function GlobalNoteCreate() {
     }
   };
 
-  const handleRetry = () => {
-    setUploadStatus('idle');
+  // 파일 선택
+  const handleFileSelect = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile && selectedFile.type.startsWith('audio/')) {
+      setFile(selectedFile);
+      setUploadStatus('idle');
+      setErrorMessage('');
+    } else {
+      setErrorMessage('오디오 파일만 업로드 가능합니다.');
+    }
+  };
+
+  // 실시간 녹음 "생성" 핸들러
+  const handleCreate = async () => {
     setErrorMessage('');
+    if (!title || !purpose) {
+      setErrorMessage('제목과 목적을 입력하세요.');
+      return;
+    }
+    if (!audioBlobRef.current) {
+      setErrorMessage('녹음된 오디오가 없습니다.');
+      return;
+    }
+    try {
+      const idToken = getIdToken();
+      const meetingId = `${getUserId()}-${Date.now()}`;
+      const nowStr = new Date().toISOString().slice(0, 16).replace('T', ' ');
+      const meeting_date = meetingDate || nowStr;
+      const created_at = nowStr;
+      const uniqueFilename = createUniqueFilename('mp3');
+      const payload = getMeetingPayload(meetingId, nowStr, meeting_date, created_at, uniqueFilename);
+      const audioBase64 = await blobToBase64(audioBlobRef.current);
+
+      // 회의 정보 저장
+      const meetingRes = await fetch(REACT_APP_MEETING_INFO_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      // 음성파일 저장
+      const audioRes = await fetch(REACT_APP_RECORD_AUDIO_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          audio_data: audioBase64,
+          file_format: 'mp3',
+          id_token: idToken,
+          meeting_id: meetingId,
+          meeting_date,
+          created_at,
+          audio_filename: uniqueFilename
+        }),
+      });
+
+      if (audioRes.status === 200 && meetingRes.status === 200) {
+        navigate('/ai-meeting-note');
+      } else {
+        alert("오류가 발생하였습니다.")
+        return;
+      }
+    } catch (err) {
+      setErrorMessage(err.message || '저장 중 오류 발생');
+    }
+  };
+
+  // 업로드 핸들러
+  const handleUpload = async () => {
+    setErrorMessage('');
+    if (!title || !purpose || !meetingDate || !file) {
+      setErrorMessage('필수 정보를 모두 입력하세요.');
+      return;
+    }
+
+    try {
+      setUploadStatus('uploading');
+      setUploadProgress(0);
+
+      const idToken = getIdToken();
+      const userId = getUserId();
+      const meetingId = `${userId}-${Date.now()}`;
+      const nowStr = new Date().toISOString().slice(0, 16).replace('T', ' ');
+      const fileExtension = file.name.split('.').pop();
+      const uniqueFilename = createUniqueFilename(fileExtension);
+      const formattedMeetingDate = meetingDate
+        ? meetingDate.replace('T', ' ') // T를 공백으로 변경
+        : nowStr;
+
+      // 1. S3 업로드
+      const presignedUrl = await getPresignedUrl(file, uniqueFilename);
+      await uploadToS3(presignedUrl, file);
+
+      // 2. Document API 호출
+      const documentRes = await fetch(REACT_APP_DOCUMENT_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': DOCUMENT_API_KEY
+        },
+        body: JSON.stringify({
+          userId: userId,
+          filePath: `users/${userId}/recordings/${uniqueFilename}`,
+          meeting_id: meetingId,
+          audio_filename: uniqueFilename
+        }),
+      });
+      if (!documentRes.ok) throw new Error('문서 생성 실패');
+      const { requestId } = await documentRes.json();
+
+      // 3. Transcription 트래킹 API 호출
+      const trackerRes = await fetch(REACT_APP_TRANSCRIPT_JOB_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': JOB_TRACKER_API_KEY
+        },
+        body: JSON.stringify({ requestId, action: "track" }),
+      });
+      if (!trackerRes.ok) throw new Error('트래킹 시작 실패');
+
+      // 4. 회의 정보 저장
+      const meetingRes = await fetch(REACT_APP_MEETING_INFO_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify(getMeetingPayload(
+          meetingId,
+          nowStr,
+          formattedMeetingDate,
+          nowStr,
+          uniqueFilename
+        )),
+      });
+      if (!meetingRes.ok) throw new Error('회의 정보 저장 실패');
+
+      setUploadStatus('success');
+      setUploadProgress(100);
+      navigate('/ai-meeting-note');
+
+    } catch (err) {
+      setUploadStatus('error');
+      setErrorMessage(err.message || '처리 중 오류 발생');
+    }
   };
 
   return (
@@ -354,16 +371,13 @@ function GlobalNoteCreate() {
             <div className="form-btns">
               <button className="main-btn" onClick={handleUpload} disabled={!file}>업로드</button>
               <button className="sub-btn" onClick={() => setMode(null)}>취소</button>
-              {uploadStatus === 'error' && (
-                <button className="retry-btn" onClick={handleRetry}>재시도</button>
-              )}
             </div>
             {uploadStatus === 'uploading' && (
               <div className="upload-progress">
                 <div className="progress-bar">
                   <div className="progress-fill" style={{ width: `${uploadProgress}%` }} />
                 </div>
-                <div className="progress-text">업로드 중... {uploadProgress}%</div>
+                <div className="progress-text">업로드 중입니다. 잠시만 기다려주세요... 진행률 : {uploadProgress}%</div>
               </div>
             )}
             {uploadStatus === 'success' && (
