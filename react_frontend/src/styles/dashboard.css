@@ -1,4 +1,42 @@
-/* 사이드바 스타일 */
+/* 전체 대시보드 CSS - 화면 꽉 채우는 최적화 버전 */
+
+/* 기본 리셋 및 폰트 설정 */
+body {
+  background: linear-gradient(120deg, #f8fafc 0%, #e0e7ff 100%);
+  font-family: 'Pretendard', 'Noto Sans KR', Arial, sans-serif;
+  color: #222;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* 애니메이션 효과 */
+button, .calendar-cell, .sidebar-item {
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+/* 앱 컨테이너 */
+.app-container {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+/* 콘텐츠 컨테이너 */
+.content-container {
+  flex: 1;
+  overflow-y: auto;
+  height: 100vh;
+  margin-left: 240px; /* 사이드바 너비만큼 여백 */
+  width: calc(100% - 240px); /* 전체 너비에서 사이드바 너비를 뺌 */
+  box-sizing: border-box;
+  padding: 0;
+}
+
+/* 사이드바 */
 .sidebar {
   width: 240px;
   height: 100vh;
@@ -6,219 +44,844 @@
   box-shadow: 1px 0 5px rgba(0,0,0,0.05);
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
   position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 1000;
+  flex-shrink: 0;
+}
+
+/* 대시보드 컨테이너 */
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+/* 대시보드 상단 섹션 - 화면 꽉 채우기 */
+.dashboard-top-section {
+  display: flex;
+  height: 100%; /* 화면 높이 100% 사용 */
+  min-height: 0;
+  gap: 0; /* 간격 없애기 */
+  padding: 20px; /* 패딩을 통한 간격 제공 */
+  box-sizing: border-box;
+}
+
+/* 좌측 및 우측 대시보드 */
+.dashboard-left, .dashboard-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  overflow: hidden;
+  min-width: 0;
+  margin: 0 10px; /* 좌우 간격 추가 */
+  background: white;
+  height: 100%; /* 화면 높이 100% 사용 */
+}
+
+/* 비율 조정 */
+.dashboard-left {
+  flex: 1.3;
+}
+
+.dashboard-right {
+  flex: 0.7;
+}
+
+/* 사용량 추적 대시보드 */
+.usage-tracker {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+/* 헤더 섹션 */
+.tracker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 30px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  border-radius: 14px 14px 0 0;
+  flex-shrink: 0;
+}
+
+.tracker-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.tracker-title h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.header-icon {
+  font-size: 1.6rem;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 10px;
+  border-radius: 12px;
+}
+
+/* 월 선택기 */
+.month-selector {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 10px 14px;
+  border-radius: 12px;
+}
+
+.month-nav-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1rem;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.month-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.current-month {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+  min-width: 70px;
+  justify-content: center;
+  font-size: 1.05rem;
+}
+
+/* 사용량 개요 섹션 */
+.usage-overview {
+  display: flex;
+  padding: 20px;
+  gap: 20px;
+  flex-shrink: 0;
+  height: 220px;
+}
+
+.total-cost-card {
+  flex: 1;
+  background: #f8fafc;
+  border-radius: 14px;
+  padding: 25px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.cost-header {
+  color: #64748b;
+  font-size: 1.1rem;
+  margin-bottom: 12px;
+}
+
+.cost-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 15px;
+  letter-spacing: -0.5px;
+}
+
+.cost-change {
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 20px;
+}
+
+.cost-change.increase {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.cost-change.decrease {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.usage-chart-container {
+  flex: 2;
+  background: #f8fafc;
+  border-radius: 14px;
+  padding: 25px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-title {
+  color: #64748b;
+  font-size: 1.1rem;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+/* 사용량 상세 섹션 */
+.usage-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 20px;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.detail-card {
+  display: flex;
+  align-items: center;
+  background: #f8fafc;
+  border-radius: 14px;
+  padding: 18px 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  transition: transform 0.2s;
+}
+
+.detail-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.detail-icon {
+  width: 45px;
+  height: 45px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  margin-right: 18px;
+  flex-shrink: 0;
+}
+
+.detail-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.detail-title {
+  font-size: 1.1rem;
+  color: #334155;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.detail-metrics {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.detail-value {
+  font-size: 1rem;
+  color: #64748b;
+}
+
+.detail-cost {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.detail-percent {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-left: 15px;
+  flex-shrink: 0;
+}
+
+/* 요약 섹션 */
+.usage-summary {
+  margin: 20px;
+  padding: 18px 25px;
+  background: #f1f5f9;
+  border-radius: 12px;
+  border-left: 5px solid #6366f1;
+  flex-shrink: 0;
+}
+
+.summary-title {
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: #1e293b;
+  font-size: 1.1rem;
+}
+
+.summary-description {
+  color: #475569;
+  line-height: 1.6;
+  font-size: 1rem;
+}
+
+.highlight {
+  font-weight: 600;
+}
+
+.highlight.positive {
+  color: #10b981;
+}
+
+/* 미팅 챗봇 스타일 */
+.meeting-chatbot {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 14px;
+  padding: 25px;
+}
+
+.meeting-chatbot h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 25px 0;
+  color: #1e293b;
+  flex-shrink: 0;
+}
+
+.chatbot-messages {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 20px;
+  padding: 20px;
+  background-color: #f8fafc;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.message {
+  margin-bottom: 14px;
+  padding: 14px 18px;
+  border-radius: 10px;
+  max-width: 85%;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.message.user {
+  background-color: #e0e7ff;
+  color: #1e293b;
+  align-self: flex-end;
+  border-bottom-right-radius: 2px;
+}
+
+.message.assistant {
+  background-color: #f1f5f9;
+  color: #1e293b;
+  align-self: flex-start;
+  border-bottom-left-radius: 2px;
+}
+
+.message.system {
+  background-color: #f3f4f6;
+  border-left: 3px solid #6b7280;
+  color: #6b7280;
+  align-self: center;
+  width: 90%;
+  font-style: italic;
+  font-size: 0.95rem;
+}
+
+.message-content {
+  margin-bottom: 6px;
+  line-height: 1.6;
+  word-break: break-word;
+  font-size: 1rem;
+}
+
+.message-time {
+  font-size: 0.8rem;
+  color: #64748b;
+  text-align: right;
+  margin-top: 5px;
+}
+
+.chatbot-input {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.chatbot-input input {
+  flex-grow: 1;
+  padding: 14px 18px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 1rem;
+  transition: border-color 0.3s;
+}
+
+.chatbot-input input:focus {
+  border-color: #3b82f6;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.chatbot-input button {
+  padding: 14px 24px;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.3s;
+  white-space: nowrap;
+  font-size: 1rem;
+}
+
+.chatbot-input button:hover {
+  background-color: #2563eb;
+}
+
+/* CSS 기반 원형 차트 스타일 */
+.pie-chart-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 0;
+  flex: 1;
+}
+
+.pie-chart {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #f1f5f9;
+  margin: 0 auto 15px auto;
+  flex-shrink: 0;
+}
+
+.pie-chart-center {
+  position: absolute;
+  width: 60%;
+  height: 60%;
+  background: white;
+  border-radius: 50%;
+  top: 20%;
+  left: 20%;
+  z-index: 10;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.05);
+}
+
+.pie-chart-segment {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 50%;
   left: 0;
   top: 0;
 }
 
-.sidebar-header {
-  padding: 20px;
-  font-size: 1.3rem;
-  font-weight: 600;
-  border-bottom: 1px solid #f1f5f9;
-  color: #1e40af;
-}
-
-.sidebar-menu {
-  padding: 10px 0;
-  flex: 1;
-}
-
-.sidebar-item {
-  padding: 12px 20px;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  color: #64748b;
-  font-weight: 500;
-}
-
-.sidebar-item:hover {
-  background-color: #f8fafc;
-  color: #3b82f6;
-}
-
-.sidebar-item.active {
-  background-color: #eff6ff;
-  color: #3b82f6;
-  border-left: 3px solid #3b82f6;
-}
-
-.sidebar-item .icon {
-  margin-right: 12px;
-  font-size: 1.1rem;
-}
-
-.sidebar-footer {
-  padding: 15px 20px;
-  border-top: 1px solid #f1f5f9;
-}
-
-.global-note-btn {
+.pie-chart-segment::before {
+  content: '';
+  position: absolute;
   width: 100%;
-  padding: 10px;
-  background-color: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 15px;
-}
-
-.global-note-btn:hover {
-  background-color: #2563eb;
-}
-
-.user-info {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.usage-info {
-  font-size: 0.9rem;
-  color: #64748b;
-  text-align: center;
-  margin-bottom: 5px;
-  font-weight: 500;
-}
-
-.usage-progress-bar {
-  width: 100%;
-  height: 8px;
-  background: #e5e7eb;
-  border-radius: 5px;
-  margin: 5px 0;
-  overflow: hidden;
-}
-
-.usage-progress-fill {
   height: 100%;
-  background: #3b82f6;
-  border-radius: 5px;
-  transition: width 0.3s;
+  background: conic-gradient(
+    var(--segment-color) var(--segment-start),
+    var(--segment-color) var(--segment-end),
+    transparent var(--segment-end)
+  );
 }
 
-.quota-detail {
-  display: flex;
-  flex-direction: column;
-  font-size: 0.8rem;
-  color: #64748b;
-  margin: 5px 0;
-}
-
-.used-time {
-  font-weight: 500;
-  color: #334155;
-}
-
-.remaining-time {
-  color: #64748b;
-  font-size: 0.75rem;
-}
-
-.user-profile {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 10px;
-  padding: 8px;
-  background-color: #f8fafc;
-  border-radius: 5px;
-}
-
-.profile-image {
+.pie-chart-segment:hover {
+  filter: brightness(1.05);
   cursor: pointer;
 }
 
-.user-name {
-  flex: 1;
-  font-weight: 500;
-  color: #334155;
-}
-
-.settings-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #64748b;
-  display: flex;
-  align-items: center;
-  padding: 5px;
+.pie-chart-segment:hover::after {
+  content: attr(data-name) " - " attr(data-cost) " (" attr(data-percent) ")";
+  position: absolute;
+  bottom: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 5px 10px;
   border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 20;
+  pointer-events: none;
 }
 
-.settings-btn:hover {
-  background-color: #f1f5f9;
-  color: #3b82f6;
+.pie-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 18px;
+  flex-shrink: 0;
 }
 
-.logout-button {
-  margin-top: 15px;
-  width: 100%;
-  padding: 8px;
-  background: none;
-  border: 1px solid #e5e7eb;
-  border-radius: 5px;
+.legend-item {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
+  gap: 6px;
+}
+
+.legend-color {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.legend-text {
+  font-size: 0.9rem;
+  color: #334155;
+  white-space: nowrap;
+}
+
+/* 커스텀 툴팁 */
+.custom-tooltip {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  padding: 10px 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e2e8f0;
+}
+
+.tooltip-label {
+  margin: 0 0 5px 0;
+  font-weight: 600;
+  color: #334155;
+}
+
+.tooltip-cost {
+  margin: 0 0 3px 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.tooltip-percent {
+  margin: 0;
   color: #64748b;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
 }
 
-.logout-button:hover {
-  background-color: #f8fafc;
-  color: #ef4444;
-  border-color: #fecaca;
+/* 반응형 미디어 쿼리 */
+@media (min-width: 1600px) {
+  /* 초대형 화면 최적화 */
+  .dashboard-top-section {
+    padding: 30px;
+  }
+  
+  .tracker-header, 
+  .meeting-chatbot {
+    padding: 30px 35px;
+  }
+  
+  .usage-overview {
+    height: 250px;
+  }
+  
+  .cost-value {
+    font-size: 2.8rem;
+  }
+  
+  .pie-chart {
+    width: 220px;
+    height: 220px;
+  }
+  
+  .detail-card {
+    padding: 20px 25px;
+  }
 }
 
-/* 반응형 디자인 */
-@media (max-width: 768px) {
+@media (max-width: 1280px) {
+  .dashboard-top-section {
+    padding: 15px;
+  }
+  
+  .dashboard-left, 
+  .dashboard-right {
+    margin: 0 8px;
+  }
+  
+  .usage-overview {
+    flex-direction: column;
+    height: auto;
+    padding: 15px;
+  }
+  
+  .cost-value {
+    font-size: 1.8rem;
+  }
+  
+  .pie-chart {
+    width: 160px;
+    height: 160px;
+  }
+  
+  .tracker-header, 
+  .meeting-chatbot {
+    padding: 20px;
+  }
+  
+  .detail-card {
+    padding: 15px;
+  }
+  
+  .detail-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1.1rem;
+    margin-right: 15px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .content-container {
+    margin-left: 200px;
+    width: calc(100% - 200px);
+  }
+  
   .sidebar {
-    width: 60px;
-    overflow: visible;
+    width: 200px;
   }
   
-  .sidebar-header, 
-  .sidebar-item span:not(.icon), 
-  .usage-info, 
-  .quota-detail, 
-  .user-name, 
-  .global-note-btn span {
-    display: none;
+  .dashboard-left, 
+  .dashboard-right {
+    flex: 1;
+    margin: 0 5px;
   }
   
-  .sidebar-item .icon {
-    margin-right: 0;
+  .tracker-header {
+    padding: 15px 20px;
+  }
+  
+  .tracker-title h2, 
+  .meeting-chatbot h2 {
     font-size: 1.3rem;
   }
   
-  .sidebar-item {
-    justify-content: center;
-    padding: 15px 10px;
+  .header-icon {
+    font-size: 1.3rem;
+    padding: 6px;
   }
   
-  .global-note-btn {
+  .usage-details {
+    padding: 0 15px;
+  }
+  
+  .usage-summary {
+    margin: 15px;
+    padding: 15px 20px;
+  }
+  
+  .meeting-chatbot {
+    padding: 15px 20px;
+  }
+  
+  .chatbot-messages {
+    padding: 15px;
+  }
+  
+  .message {
+    padding: 12px 15px;
+  }
+  
+  .chatbot-input input {
+    padding: 12px 15px;
+  }
+  
+  .chatbot-input button {
+    padding: 12px 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .content-container {
+    margin-left: 60px;
+    width: calc(100% - 60px);
+  }
+  
+  .sidebar {
+    width: 60px;
+  }
+  
+  .dashboard-top-section {
+    flex-direction: column;
+    padding: 10px;
+  }
+  
+  .dashboard-left,
+  .dashboard-right {
+    height: 50vh; /* 각각 화면 높이의 절반 */
+    margin: 0 0 10px 0;
+  }
+  
+  .dashboard-right {
+    margin-bottom: 0;
+  }
+  
+  .tracker-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+    padding: 15px;
+  }
+  
+  .month-selector {
+    align-self: center;
+  }
+  
+  .usage-details {
+    max-height: calc(50vh - 350px); /* 적절한 높이 계산 */
+  }
+  
+  .detail-metrics {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+  
+  .detail-percent {
+    font-size: 1rem;
+  }
+  
+  .chatbot-messages {
+    max-height: calc(50vh - 160px); /* 적절한 높이 계산 */
+  }
+  
+  .message {
+    max-width: 90%;
+  }
+  
+  .chatbot-input input {
+    padding: 10px;
+  }
+  
+  .chatbot-input button {
+    padding: 10px 15px;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-top-section {
     padding: 8px;
-    justify-content: center;
   }
   
-  .usage-progress-bar {
-    width: 40px;
-    margin: 10px auto;
+  .dashboard-left,
+  .dashboard-right {
+    height: calc(50vh - 8px);
+    margin: 0 0 8px 0;
   }
   
-  .user-profile {
-    justify-content: center;
-    padding: 5px;
+  .usage-overview,
+  .usage-details,
+  .usage-summary {
+    padding: 10px;
+    margin: 10px;
+  }
+  
+  .total-cost-card,
+  .usage-chart-container,
+  .detail-card {
+    padding: 12px;
+  }
+  
+  .cost-value {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+  }
+  
+  .cost-header, 
+  .chart-title {
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+  }
+  
+  .detail-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 0.9rem;
+    margin-right: 10px;
+  }
+  
+  .detail-title {
+    font-size: 0.9rem;
+  }
+  
+  .detail-value, 
+  .detail-cost {
+    font-size: 0.85rem;
+  }
+  
+  .detail-percent {
+    font-size: 0.9rem;
+  }
+  
+  .pie-chart {
+    width: 120px;
+    height: 120px;
+  }
+  
+  .legend-text {
+    font-size: 0.8rem;
+  }
+  
+  .meeting-chatbot {
+    padding: 12px 15px;
+  }
+  
+  .meeting-chatbot h2 {
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+  }
+  
+  .chatbot-messages {
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+  
+  .message {
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+  
+  .message-content {
+    font-size: 0.9rem;
   }
 }

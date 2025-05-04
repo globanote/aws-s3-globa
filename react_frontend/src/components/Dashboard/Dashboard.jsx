@@ -7,19 +7,24 @@ import '../../styles/dashboard.css';
 function Dashboard({ user }) {
   const navigate = useNavigate();
   
-  const handleDateClick = (date) => {
-    console.log('Selected date:', date);
+  // 더미 사용자 데이터 (실제로는 props에서 받은 데이터 사용)
+  const dummyUser = {
+    name: "사용자",
+    usage: {
+      days: 30,
+      totalAmount: "257,800원",
+      usagePercent: 75
+    }
   };
-
-  const handleScheduleClick = (schedule) => {
-    console.log('Selected schedule:', schedule);
-  };
+  
+  // 실제 사용자 데이터가 없는 경우 더미 데이터 사용
+  const userData = user || dummyUser;
 
   return (
     <div className="dashboard-container">
       <div className="dashboard-top-section">
         <div className="dashboard-left">
-          <UsageTracker user={user} />
+          <UsageTracker user={userData} />
         </div>
         <div className="dashboard-right">
           <MeetingChatbot />
