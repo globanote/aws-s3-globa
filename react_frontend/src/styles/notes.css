@@ -1,131 +1,131 @@
-  /* Meeting Reservation Styles */
-  .meeting-reservation h2 {
-    font-size: 1.8rem;
-    margin-bottom: 20px;
-  }
-  
-  .reservation-container {
-    display: flex;
-    gap: 20px;
-    height: calc(100vh - 120px);
-  }
-  
-  .left-column {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-  
-  .right-column {
-    flex: 1;
-    background-color: white;
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    padding: 20px;
-  }
-  
-  .calendar-preview, .time-slots {
-    background-color: white;
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    padding: 20px;
-  }
-  
-  .calendar-preview h3, .time-slots h3 {
-    font-size: 1.3rem;
-    margin-bottom: 15px;
-  }
-  
-  .calendar-mini {
-    height: 200px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  
-  .selected-day {
-    width: 40px;
-    height: 40px;
-    background-color: #3b82f6;
-    color: white;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 1.2rem;
-    font-weight: bold;
-  }
-  
-  .time-slots-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .time-slot {
-    padding: 10px;
-    border: 1px solid #e5e7eb;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-  
-  .time-slot:hover {
-    background-color: #f3f4f6;
-  }
-  
-  .time-slot.selected {
-    background-color: #e0e7ff;
-    border-color: #3b82f6;
-  }
-  
-  .form-group {
-    margin-bottom: 15px;
-  }
-  
-  .form-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-  }
-  
-  .form-group input, .form-group select, .form-group textarea {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #e5e7eb;
-    border-radius: 5px;
-  }
-  
-  .button-group {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 20px;
-  }
-  
-  .submit-btn {
-    padding: 10px 15px;
-    background-color: #3b82f6;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-  }
-  
-  /* Global Note Creation Styles */
-  .global-note-creation h2 {
-    font-size: 1.8rem;
-    margin-bottom: 20px;
-  }
-  
-  .options-container {
-    background-color: white;
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    padding: 20px;
-    margin-bottom: 20px;
-  }
+/* Meeting Reservation Styles */
+.meeting-reservation h2 {
+  font-size: 1.8rem;
+  margin-bottom: 20px;
+}
+
+.reservation-container {
+  display: flex;
+  gap: 20px;
+  height: calc(100vh - 120px);
+}
+
+.left-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.right-column {
+  flex: 1;
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  padding: 20px;
+}
+
+.calendar-preview, .time-slots {
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  padding: 20px;
+}
+
+.calendar-preview h3, .time-slots h3 {
+  font-size: 1.3rem;
+  margin-bottom: 15px;
+}
+
+.calendar-mini {
+  height: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.selected-day {
+  width: 40px;
+  height: 40px;
+  background-color: #3b82f6;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.time-slots-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.time-slot {
+  padding: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.time-slot:hover {
+  background-color: #f3f4f6;
+}
+
+.time-slot.selected {
+  background-color: #e0e7ff;
+  border-color: #3b82f6;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.form-group input, .form-group select, .form-group textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 5px;
+}
+
+.button-group {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.submit-btn {
+  padding: 10px 15px;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+/* Global Note Creation Styles */
+.global-note-creation h2 {
+  font-size: 1.8rem;
+  margin-bottom: 20px;
+}
+
+.options-container {
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  padding: 20px;
+  margin-bottom: 20px;
+}
 
 /* AI Meeting Note 3단 레이아웃 및 스타일 */
 .ai-meetingnote-root {
@@ -310,11 +310,21 @@
   box-shadow: 0 2px 8px rgba(60, 80, 180, 0.06);
   padding: 32px 32px 32px 32px;
 }
+
+/* 새로 추가된 스타일 */
+.ai-note-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 16px;
+}
+
 .ai-note-title-row {
   display: flex;
   align-items: center;
   gap: 18px;
-  margin-bottom: 8px;
 }
 .ai-note-title {
   font-size: 1.25rem;
@@ -325,6 +335,53 @@
   font-size: 1rem;
   color: #6b7280;
   margin-left: 8px;
+}
+
+.ai-summary-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.ai-summary-type-row {
+  display: flex;
+  align-items: center;
+}
+.ai-summary-type-label {
+  font-size: 0.95rem;
+  color: #374151;
+  font-weight: 500;
+  margin-right: 8px;
+}
+.ai-summary-type-select {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1.5px solid #e0e7ff;
+  font-size: 0.95rem;
+  background: #f9fafb;
+  color: #222;
+  min-width: 150px;
+}
+
+.ai-generate-btn {
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+  white-space: nowrap;
+}
+.ai-generate-btn:hover {
+  background: #2563eb;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+.ai-generate-btn:disabled {
+  background: #93c5fd;
+  cursor: not-allowed;
 }
 
 .ai-transcript-list {
@@ -354,27 +411,12 @@
   flex: 1;
 }
 
-.ai-summary-type-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 18px;
-}
-.ai-summary-type-label {
-  font-size: 1rem;
-  color: #374151;
-  font-weight: 500;
-}
-.ai-summary-type-select {
-  padding: 6px 12px;
-  border-radius: 6px;
-  border: 1.5px solid #e0e7ff;
-  font-size: 1rem;
-  background: #f9fafb;
-  color: #222;
-}
 .ai-summary-content {
-  margin-top: 8px;
+  margin-top: 20px;
+  line-height: 1.6;
+}
+.summary-line {
+  margin-bottom: 8px;
 }
 .ai-summary-title {
   font-size: 1.1rem;
@@ -398,6 +440,17 @@
   line-height: 1.7;
 }
 
+.ai-summary-placeholder {
+  color: #6b7280;
+  font-size: 1rem;
+  text-align: center;
+  margin-top: 40px;
+}
+
+.ai-summary-view {
+  position: relative;
+}
+
 @media (max-width: 1200px) {
   .ai-note-section {
     padding: 24px 8px 0 8px;
@@ -416,5 +469,14 @@
   .ai-sidebar-title {
     font-size: 1.1rem;
     padding: 18px 0 12px 12px;
+  }
+  .ai-note-header-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .ai-summary-controls {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
   }
 }

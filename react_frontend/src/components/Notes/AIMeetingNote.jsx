@@ -7,7 +7,7 @@ function AIMeetingNote() {
   const auth = useAuth();
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState('transcript');
-  const [summaryType, setSummaryType] = useState('decision_making');
+  const [summaryType, setSummaryType] = useState('one_page_summary');
   const [meetingHistory, setMeetingHistory] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentTranscript, setCurrentTranscript] = useState({
@@ -22,7 +22,6 @@ function AIMeetingNote() {
     meetingDate: '',
     content: ''
   });
-
 
   const [isSummaryLoading, setIsSummaryLoading] = useState(false);
 
@@ -264,13 +263,13 @@ function AIMeetingNote() {
             </div>
           ) : (
             <div className="ai-summary-view">
-              <div className="ai-note-title-row">
-              <div className="ai-note-title">{currentTranscript.title + ' 요약' || 'AI 회의록 요약'}</div>
-                <div className="ai-note-date">{currentSummary.meetingDate || ''}</div>
-              </div>
-
-              {!currentSummary.content && (
-                <div className="summary-control-center">
+              <div className="ai-note-header-row">
+                <div className="ai-note-title-row">
+                  <div className="ai-note-title">{currentTranscript.title + ' 요약' || 'AI 회의록 요약'}</div>
+                  <div className="ai-note-date">{currentSummary.meetingDate || ''}</div>
+                </div>
+                
+                <div className="ai-summary-controls">
                   <div className="ai-summary-type-row">
                     <label htmlFor="summaryType" className="ai-summary-type-label">회의 유형:</label>
                     <select
@@ -279,20 +278,25 @@ function AIMeetingNote() {
                       value={summaryType}
                       onChange={e => setSummaryType(e.target.value)}
                     >
-                      <option value="decision_making">의사 결정 회의</option>
-                      <option value="problem_solving">문제 해결 회의</option>
-                      <option value="Information_share">정보 공유 회의</option>
+                      <option value="one_page_summary">한페이지 요약</option>
+                      <option value="lecture_note">강의노트</option>
+                      <option value="IR">IR/피칭</option>
+                      <option value="general_stockholders_meeting">주주총회</option>
+                      <option value="sales_meeting">세일즈 미팅</option>
+                      <option value="job_interview">채용 인터뷰</option>
+                      <option value="user_interview">유저 인터뷰</option>
+                      <option value="oneandone_meeting">원앤원 미팅</option>
                     </select>
                   </div>
                   <button
-                    className="main-btn generate-btn"
+                    className="ai-generate-btn"
                     onClick={handleGenerateSummary}
-                    disabled={isSummaryLoading}
+                    disabled={isSummaryLoading || !currentTranscript.content}
                   >
                     {isSummaryLoading ? '요약 생성 중...' : '요약 생성하기'}
                   </button>
                 </div>
-              )}
+              </div>
 
               <div className="ai-summary-content">
                 {currentSummary.content ? (
@@ -302,7 +306,7 @@ function AIMeetingNote() {
                 ) : (
                   <div className="ai-summary-placeholder">
                     {currentTranscript.content
-                      ? ''
+                      ? '위 회의 유형을 선택하고 요약 생성하기 버튼을 클릭하세요'
                       : '먼저 좌측 History에서 요약할 회의를 선택해주세요'}
                   </div>
                 )}
