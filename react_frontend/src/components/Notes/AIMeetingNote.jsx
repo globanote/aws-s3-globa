@@ -185,7 +185,7 @@ function AIMeetingNote() {
           onChange={e => setSearchTerm(e.target.value)}
         />
         {loading ? (
-          <div className="ai-history-loading">불러오는 중...</div>
+          <div className="ai-history-loading" style={{ textAlign: 'center', margin: '2em 0' }}>불러오는 중...</div>
         ) : filteredMeetings.length === 0 ? (
           <div style={{ textAlign: 'center', margin: '2em 0' }}>
             {searchTerm ? ( // 검색어가 있는 경우
