@@ -9,12 +9,11 @@ function UsageTracker({ user }) {
   
   // 더미 데이터 - 실제로는 API에서 가져온 데이터로 대체
   const monthlyData = {
-    totalCost: "257,800원",
-    percentChange: -5,
+    totalCost: "36,800원",
     breakdown: [
-      { name: '토큰 사용량', value: 125000, cost: 125000, percent: 48.5, color: '#6366f1' },
-      { name: '호출 횟수', value: 1423, cost: 85380, percent: 33.1, color: '#10b981' },
-      { name: '연산 시간', value: '23.8시간', cost: 47420, percent: 18.4, color: '#f97316' }
+      { name: '토큰 사용량', value: 125000, cost: 17848, percent: 48.5, color: '#6366f1' },
+      { name: '호출 횟수', value: 1423, cost: 12180, percent: 33.1, color: '#10b981' },
+      { name: '연산 시간', value: '23.8시간', cost: 6772, percent: 18.4, color: '#f97316' }
     ]
   };
 
@@ -75,9 +74,6 @@ function UsageTracker({ user }) {
         <div className="total-cost-card">
           <div className="cost-header">이번 달 총 사용 금액</div>
           <div className="cost-value">{monthlyData.totalCost}</div>
-          <div className={`cost-change ${monthlyData.percentChange < 0 ? 'decrease' : 'increase'}`}>
-            {monthlyData.percentChange < 0 ? '▼' : '▲'} {Math.abs(monthlyData.percentChange)}% (전월 대비)
-          </div>
         </div>
         
         <div className="usage-chart-container">
@@ -141,7 +137,7 @@ function UsageTracker({ user }) {
           {monthNames[activeMonth]} 사용량 분석: 총 비용의 <span className="highlight" style={{ color: '#6366f1' }}>48.5%</span>가 토큰 사용,
           <span className="highlight" style={{ color: '#10b981' }}>33.1%</span>가 API 호출,
           <span className="highlight" style={{ color: '#f97316' }}>18.4%</span>가 연산 시간에 소요되었습니다.
-          전월 대비 비용이 <span className="highlight positive">5% 감소</span>했습니다.
+          총 비용이 <span className="highlight">36,800원</span>으로 나왔습니다.
         </div>
       </div>
     </div>
