@@ -9,7 +9,8 @@ import {
   FaRegStickyNote, 
   FaRegCalendarCheck, 
   FaUserCircle, 
-  FaCog
+  FaCog,
+  FaClock
 } from 'react-icons/fa';
 import { useAuth } from 'react-oidc-context';
 import '../styles/sidebar.css';
@@ -35,7 +36,7 @@ function Sidebar({ user, onLogout }) {
     };
   }, []);
 
-  // 사용자 할당량 정보 가져오기
+  // 사용자 할당량 정보 가져오기 - 컴포넌트 마운트 시 한 번만 실행
   useEffect(() => {
     let isActive = true; // 비동기 작업 관리를 위한 플래그
 
@@ -51,25 +52,6 @@ function Sidebar({ user, onLogout }) {
 
     return () => {
       isActive = false; // 클린업 함수에서 플래그 변경
-    };
-  }, [auth.isAuthenticated, auth.user, isMounted]);
-
-  // API 데이터를 폴링하여 사용 시간 업데이트
-  useEffect(() => {
-    let updateInterval;
-    
-    if (isMounted) {
-      updateInterval = setInterval(() => {
-        if (auth.isAuthenticated && auth.user && isMounted) {
-          getUserQuotaData(true);
-        }
-      }, 60000); // 1분마다 업데이트
-    }
-    
-    return () => {
-      if (updateInterval) {
-        clearInterval(updateInterval);
-      }
     };
   }, [auth.isAuthenticated, auth.user, isMounted]);
 
@@ -140,6 +122,13 @@ function Sidebar({ user, onLogout }) {
       if (isActive && isMounted) {
         setIsLoading(false);
       }
+    }
+  };
+
+  // 수동 새로고침 함수 - 필요한 경우 사용자가 호출할 수 있음
+  const refreshQuotaData = () => {
+    if (isMounted && auth.isAuthenticated && auth.user) {
+      getUserQuotaData(true);
     }
   };
 
@@ -217,22 +206,51 @@ function Sidebar({ user, onLogout }) {
           ) : error ? (
             <div className="error">데이터 로드 실패</div>
           ) : (
-            <>
-              <div className="usage-progress-bar">
-                <div
-                  className="usage-progress-fill"
-                  style={{ 
-                    width: `${quotaInfo?.usagePercent || 0}%`,
-                    backgroundColor: (quotaInfo?.usagePercent || 0) > 80 ? '#ef4444' : 
-                                    (quotaInfo?.usagePercent || 0) > 60 ? '#f97316' : '#6366f1'
-                  }}
-                ></div>
+            <div className="user-quota-info">
+              <div className="quota-header">
+                <FaClock className="icon" />
+                <span>사용 시간 정보</span>
               </div>
-              <div className="quota-detail">
-                <span className="used-time">{quotaInfo?.usedTimeFormatted || '0:00'} / {quotaInfo?.totalLimitFormatted || '5:00:00'}</span>
-                <span className="remaining-time">{quotaInfo?.remainingTimeFormatted || '5:00:00'} 남음</span>
+              
+              <div className="time-cards-container">
+                {/* 사용 시간 카드 - 통합된 디자인 */}
+                <div className="time-card used">
+                  <div className="time-card-title">사용 시간</div>
+                  <div className="time-card-value">{quotaInfo?.usedTimeFormatted || '0:00'}</div>
+                  <div className="time-card-subtitle">{quotaInfo?.usedTimeFormatted || '0:00'} / {quotaInfo?.totalLimitFormatted || '5:00:00'}</div>
+                </div>
+                
+                {/* 남은 시간 카드 - 통합된 디자인 */}
+                <div className="time-card remaining">
+                  <div className="time-card-title">남은 시간</div>
+                  <div className="time-card-value">{quotaInfo?.remainingTimeFormatted || '5:00:00'}</div>
+                  <div className="time-card-subtitle">{quotaInfo?.remainingTimeFormatted || '5:00:00'} 남음</div>
+                </div>
               </div>
-            </>
+              
+              {/* 진행 상태 표시 - 통합된 디자인 */}
+              <div className="progress-container">
+                <div className="usage-progress-bar">
+                  <div
+                    className={`usage-progress-fill ${
+                      (quotaInfo?.usagePercent || 0) > 80 ? 'danger' : 
+                      (quotaInfo?.usagePercent || 0) > 60 ? 'warning' : ''
+                    }`}
+                    style={{ width: `${quotaInfo?.usagePercent || 0}%` }}
+                  ></div>
+                </div>
+                
+                {/* 상태바 하단에 퍼센트 표시 */}
+                <div 
+                  className={`progress-percent ${
+                    (quotaInfo?.usagePercent || 0) > 80 ? 'danger' : 
+                    (quotaInfo?.usagePercent || 0) > 60 ? 'warning' : ''
+                  }`}
+                >
+                  {quotaInfo?.usagePercent || 0}%
+                </div>
+              </div>
+            </div>
           )}
           <div className="user-profile">
             <div className="profile-image" onClick={handleProfileClick}>
