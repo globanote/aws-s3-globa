@@ -67,7 +67,7 @@ function Login() {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h2>글로봐 서비스에 오신 것을 환영합니다</h2>
+        <h2>글로바 서비스에 오신 것을 환영합니다</h2>
         <p className="login-desc">
           AWS Cognito 계정으로 로그인하여 서비스를 이용해 보세요.
         </p>
