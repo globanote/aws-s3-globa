@@ -480,3 +480,30 @@
     gap: 12px;
   }
 }
+.date-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.styled-date-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+.styled-date-input:focus {
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+
+.date-input-icon {
+  position: absolute;
+  right: 10px;
+  color: #666;
+  pointer-events: none;
+}
