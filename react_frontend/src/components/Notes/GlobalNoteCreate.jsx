@@ -169,9 +169,33 @@ function GlobalNoteCreate() {
         });
       }, 500);
 
+      const getNowKST = () => {
+        const now = new Date();
+        const options = { 
+          timeZone: 'Asia/Seoul',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        };
+        const formatter = new Intl.DateTimeFormat('ko-KR', options);
+        const parts = formatter.formatToParts(now);
+        
+        const partValues = parts.reduce((acc, part) => {
+          acc[part.type] = part.value;
+          return acc;
+        }, {});
+        
+        return `${partValues.year}-${partValues.month}-${partValues.day} ${partValues.hour}:${partValues.minute}`;
+      };
+      
+      
+      
+      const nowStr = getNowKST();  
       const idToken = getIdToken();
       const meetingId = `${getUserId()}-${Date.now()}`;
-      const nowStr = new Date().toISOString().slice(0, 16).replace('T', ' ');
       const meeting_date = nowStr;
       const created_at = nowStr;
       const uniqueFilename = createUniqueFilename('mp3');
@@ -200,8 +224,6 @@ function GlobalNoteCreate() {
           file_format: 'mp3',
           id_token: idToken,
           meeting_id: meetingId,
-          meeting_date,
-          created_at,
           audio_filename: uniqueFilename
         }),
       });
@@ -235,10 +257,20 @@ function GlobalNoteCreate() {
       setUploadStatus('uploading');
       setUploadProgress(0);
 
+      const getNowKST = () => {
+        const now = new Date();
+        const utc = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
+        const KR_TIME_DIFF = 9 * 60 * 60 * 1000; // 한국은 UTC+9
+        const korNow = new Date(utc + KR_TIME_DIFF);
+        return korNow.toISOString().slice(0, 16).replace('T', ' ');
+      };
+
+      
+
       const idToken = getIdToken();
       const userId = getUserId();
       const meetingId = `${userId}-${Date.now()}`;
-      const nowStr = new Date().toISOString().slice(0, 16).replace('T', ' ');
+      const nowStr = getNowKST();
       const fileExtension = file.name.split('.').pop();
       const uniqueFilename = createUniqueFilename(fileExtension);
       const formattedMeetingDate = meetingDate
