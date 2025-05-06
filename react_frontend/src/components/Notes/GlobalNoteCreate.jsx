@@ -26,6 +26,9 @@ function GlobalNoteCreate() {
   const [errorMessage, setErrorMessage] = useState('');
   const [uploadStatus, setUploadStatus] = useState('idle');
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [recordStatus, setRecordStatus] = useState('idle');
+  const [recordProgress, setRecordProgress] = useState(0);
+
 
   const [isRecording, setIsRecording] = useState(false);
   const audioBlobRef = useRef(null);
@@ -141,7 +144,6 @@ function GlobalNoteCreate() {
     }
   };
 
-  // 실시간 녹음 "생성" 핸들러
   const handleCreate = async () => {
     setErrorMessage('');
     if (!title || !purpose) {
@@ -153,10 +155,24 @@ function GlobalNoteCreate() {
       return;
     }
     try {
+      setRecordStatus('uploading');
+      setRecordProgress(0);
+
+      // 진행 상태 시뮬레이션
+      const progressInterval = setInterval(() => {
+        setRecordProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 500);
+
       const idToken = getIdToken();
       const meetingId = `${getUserId()}-${Date.now()}`;
       const nowStr = new Date().toISOString().slice(0, 16).replace('T', ' ');
-      const meeting_date = meetingDate || nowStr;
+      const meeting_date = nowStr;
       const created_at = nowStr;
       const uniqueFilename = createUniqueFilename('mp3');
       const payload = getMeetingPayload(meetingId, nowStr, meeting_date, created_at, uniqueFilename);
@@ -191,12 +207,18 @@ function GlobalNoteCreate() {
       });
 
       if (audioRes.status === 200 && meetingRes.status === 200) {
-        navigate('/ai-meeting-note');
+        clearInterval(progressInterval);
+        setRecordProgress(100);
+        setRecordStatus('success');
+        setTimeout(() => navigate('/ai-meeting-note'), 1000);
       } else {
-        alert("오류가 발생하였습니다.")
+        clearInterval(progressInterval);
+        setRecordStatus('error');
+        alert("오류가 발생하였습니다.");
         return;
       }
     } catch (err) {
+      setRecordStatus('error');
       setErrorMessage(err.message || '저장 중 오류 발생');
     }
   };
@@ -270,12 +292,12 @@ function GlobalNoteCreate() {
           uniqueFilename
         )),
       });
-      if (!meetingRes.ok) throw new Error('회의 정보 저장 실패');
 
-      setUploadStatus('success');
-      setUploadProgress(100);
-      navigate('/ai-meeting-note');
-
+      if (meetingRes.status === 200 && trackerRes.status === 200) {
+        setUploadStatus('success');
+        setUploadProgress(100);
+        navigate('/ai-meeting-note');
+      }
     } catch (err) {
       setUploadStatus('error');
       setErrorMessage(err.message || '처리 중 오류 발생');
@@ -329,9 +351,30 @@ function GlobalNoteCreate() {
             </div>
             {errorMessage && <div className="error-message">{errorMessage}</div>}
             <div className="form-btns">
-              <button className="main-btn" onClick={handleCreate}>생성</button>
+              <button className="main-btn" onClick={handleCreate} disabled={recordStatus === 'uploading'}>회의 생성</button>
               <button className="sub-btn" onClick={() => setMode(null)}>취소</button>
             </div>
+
+            {recordStatus === 'uploading' && (
+              <div className="upload-progress">
+                <div className="progress-bar">
+                  <div className="progress-fill" style={{ width: `${recordProgress}%` }} />
+                </div>
+                <div className="progress-text">회의를 생성중입니다. 잠시만 기다려주세요... 진행률 : {recordProgress}%</div>
+              </div>
+            )}
+            {recordStatus === 'success' && (
+              <div className="upload-success">
+                <div className="success-icon">✓</div>
+                <div className="success-text">생성 완료!</div>
+              </div>
+            )}
+            {recordStatus === 'error' && (
+              <div className="upload-error">
+                <div className="error-icon">!</div>
+                <div className="error-text">생성 실패: {errorMessage}</div>
+              </div>
+            )}
           </div>
         )}
         {mode === 'upload' && (
@@ -355,12 +398,15 @@ function GlobalNoteCreate() {
             </div>
             <div className="form-group">
               <label>회의 진행 날짜</label>
-              <input
-                type="datetime-local"
-                value={meetingDate}
-                onChange={e => setMeetingDate(e.target.value)}
-                placeholder="YYYY-MM-DD HH-mm"
-              />
+              <div className="date-input-container">
+                <input
+                  type="datetime-local"
+                  value={meetingDate}
+                  onChange={e => setMeetingDate(e.target.value)}
+                  className="styled-date-input"
+                />
+                <span className="date-input-icon">📅</span>
+              </div>
             </div>
             <div className="form-group">
               <label>파일 업로드</label>
@@ -369,7 +415,7 @@ function GlobalNoteCreate() {
             </div>
             {errorMessage && <div className="error-message">{errorMessage}</div>}
             <div className="form-btns">
-              <button className="main-btn" onClick={handleUpload} disabled={!file}>업로드</button>
+              <button className="main-btn" onClick={handleUpload} disabled={!file}>회의 생성</button>
               <button className="sub-btn" onClick={() => setMode(null)}>취소</button>
             </div>
             {uploadStatus === 'uploading' && (
@@ -377,7 +423,7 @@ function GlobalNoteCreate() {
                 <div className="progress-bar">
                   <div className="progress-fill" style={{ width: `${uploadProgress}%` }} />
                 </div>
-                <div className="progress-text">업로드 중입니다. 잠시만 기다려주세요... 진행률 : {uploadProgress}%</div>
+                <div className="progress-text">회의를 생성중입니다. 잠시만 기다려주세요... 진행률 : {uploadProgress}%</div>
               </div>
             )}
             {uploadStatus === 'success' && (

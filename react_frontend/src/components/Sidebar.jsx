@@ -198,7 +198,7 @@ function Sidebar({ user, onLogout }) {
       <div className="sidebar-footer">
         <button className="global-note-btn" onClick={handleGlobalNoteCreate}>
           <FaRegStickyNote style={{ marginRight: 8 }} />
-          <span>글로벌노트 생성</span>
+          <span>글로바노트 생성</span>
         </button>
         <div className="user-info">
           {isLoading ? (
