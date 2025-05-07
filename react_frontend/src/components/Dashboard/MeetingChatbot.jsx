@@ -39,7 +39,7 @@ function MeetingChatbot() {
     setMessages([
       {
         role: 'assistant',
-        content: '안녕하세요! 회의 도우미입니다. 회의 일정이나 진행사항에 대해 질문해 주세요.',
+        content: '안녕하세요! 글로바노트 활용 도우미입니다. 활용 방법에 대해 궁금한 점이 있으면 질문해 주세요.',
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }
     ]);
